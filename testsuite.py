@@ -354,6 +354,7 @@ class TestSuite:
 
                 self.testData[test[2]]["status"] = status
                 self.testData[test[2]]["errorMessage"] = errorMessage
+        self.removeIndex()
 
     def extractTests(self):
         # Currently only for the folder aggregates
@@ -397,10 +398,12 @@ def main():
         sys.exit()
     testSuite = TestSuite(args[0])
     if len(args) == 2:
+        print("GET TESTS!")
         testSuite.extractTests()
     else:
+        print("RUN TESTS!")
         testSuite.runTests()
-    testSuite.generateJSONFile()
+        testSuite.generateJSONFile()
     print("DONE!")
 
 
