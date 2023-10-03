@@ -3,91 +3,28 @@ import sys
 import time
 import csv
 import requests
+import json
 from io import StringIO
 from xml.etree import cElementTree as ElementTree
-import json
-
-PATH_TO_TESTS = "./TestSuite/sparql11-test-suite/"
-
-
-def jsonToDict(string):
-    json_dict = json.loads(string)
-    return json_dict
-
-def xmlToDict(file):
-    tree = ElementTree.parse(file)
-    root = tree.getroot()
-    # Define the XML namespace
-    ns = {'sparql': 'http://www.w3.org/2005/sparql-results#'}
-
-    # Init the output dictionary
-    output = {'head': {'vars': []}, 'results': {'bindings': []}}
-
-    # head
-    head = root.find('sparql:head', ns)
-    if head is not None:
-        for variable in head.findall('sparql:variable', ns):
-            name = variable.attrib['name']
-            output['head']['vars'].append(name)
-
-    # results
-    results = root.find('sparql:results', ns)
-    if results is not None:
-        for result in results.findall('sparql:result', ns):
-            binding_dict = {}
-            for binding in result.findall('sparql:binding', ns):
-                name = binding.attrib['name']
-                value = {}
-
-                # URI
-                uri = binding.find('sparql:uri', ns)
-                if uri is not None:
-                    value['type'] = 'uri'
-                    value['value'] = uri.text
-
-                # Literal
-                literal = binding.find('sparql:literal', ns)
-                if literal is not None:
-                    value['type'] = 'literal'
-                    value['value'] = literal.text
-                    value['datatype'] = literal.attrib['datatype']
-
-                binding_dict[name] = value
-
-            output['results']['bindings'].append(binding_dict)
-
-    return output
-
-def csvAndTsvtoArray(string, type):
-    result = []
-
-    with StringIO(string) as io:
-        delimiter = ',' if type == "csv" else '\t'  # Determine the delimiter
-        csvReader = csv.reader(io, delimiter=delimiter)
-        for row in csvReader:
-            result.append(row)
-
-    return result
 
 class TestSuite:
-    def __init__(self, file):
+    def __init__(self, path):
+        self.pathToBinaries = path
         self.testData = {}
-        # SOFT PASSED
+        # QLever changes that are considered the same
         self.alias = {
-            'http://www.w3.org/2001/XMLSchema#integer': 'http://www.w3.org/2001/XMLSchema#int',
-            'http://www.w3.org/2001/XMLSchema#double': 'http://www.w3.org/2001/XMLSchema#decimal'}
+            "http://www.w3.org/2001/XMLSchema#integer": "http://www.w3.org/2001/XMLSchema#int",
+            "http://www.w3.org/2001/XMLSchema#double": "http://www.w3.org/2001/XMLSchema#decimal"}
+        self.pathToTestSuite = "./TestSuite/sparql11-test-suite/"
         self.testsOfGraph = {}
+
+    def initializeTests(self, file):
         try:
-            with open(file) as csvFile:
+            with open(file, "r" , newline="") as csvFile:
                 csvReader = csv.reader(csvFile)
                 # row:
-                # test,type,name,feature,comment,approval,approvedBy,query,data,result
+                # test,type,name,feature,comment,approval,approvedBy,query,data,result,regime,action,resultData,request,graphData,graph,resultGraph,label,resultLabel
                 for row in csvReader:
-                    if row[8] in self.testsOfGraph:
-                        self.testsOfGraph[row[8]].append([row[7], row[9], row[2]])
-                    else:
-                        self.testsOfGraph[row[8]] = [[row[7], row[9], row[2]]]
-                    
                     # Extract folder the test is located in
                     lastSlashIndex = row[0].rfind("/")
                     secondLastSlashIndex = row[0].rfind("/", 0, lastSlashIndex - 1)
@@ -95,52 +32,80 @@ class TestSuite:
                     # Extract test type
                     lastHashtagIndex = row[1].rfind("#")
                     typeOfTest = row[1][lastHashtagIndex + 1:]
-                    self.testData[row[2]] = {'test': row[0],
-                                            'type': row[1],
-                                            'typeName' : typeOfTest,
-                                            'name': row[2],
-                                            'path' : pathToTest,
-                                            'feature': row[3],
-                                            'comment': row[4],
-                                            'approval': row[5],
-                                            'approvedBy': row[6],
-                                            'query': row[7],
-                                            'graph': row[8],
-                                            'result': row[9],
-                                            'status': '',
-                                            'errorType': '',
-                                            'errorMessage': '',
-                                            'expected': '',
-                                            'got': '',
-                                            'indexLog': '',
-                                            'serverLog': '',
-                                            'serverStatus': '',
-                                            'queryLog': '',
-                                            'querySent' : ''}
+
+                    if typeOfTest == "QueryEvaluationTest" or "CSVResultFormatTest" or "PositiveSyntaxTest11" or "NegativeSyntaxTest11":
+                        if typeOfTest == "PositiveSyntaxTest11" or  "NegativeSyntaxTest11":
+                            if row[8] == "":
+                                row[8] = "manifest.ttl"
+                            if row[7] == "" and row[11] != "":
+                                row[7] = row[11]
+
+                        graphPath = pathToTest + row[8]
+                        if graphPath in self.testsOfGraph:
+                            self.testsOfGraph[graphPath].append([row[7], row[9], row[2], typeOfTest])
+                        else:
+                            self.testsOfGraph[graphPath] = [[row[7], row[9], row[2], typeOfTest]]
+
+                    self.testData[row[2]] = {"test": row[0],
+                                            "type": row[1],
+                                            "typeName" : typeOfTest,
+                                            "name": row[2],
+                                            "path" : pathToTest,
+                                            "feature": row[3],
+                                            "comment": row[4],
+                                            "approval": row[5],
+                                            "approvedBy": row[6],
+                                            "query": row[7],
+                                            "graph": row[8],
+                                            "result": row[9],
+                                            "queryFile": self.readFile(self.pathToTestSuite+pathToTest+row[7]),
+                                            "graphFile": self.readFile(self.pathToTestSuite+pathToTest+row[8]),
+                                            "resultFile": self.readFile(self.pathToTestSuite+pathToTest+row[9]),
+                                            "expectedDif": "",
+                                            "resultDif": "",
+                                            "status": "Not tested",
+                                            "errorType": "",
+                                            "expected": "",
+                                            "got": "",
+                                            "indexLog": "",
+                                            "serverLog": "",
+                                            "serverStatus": "",
+                                            "queryLog": "",
+                                            "querySent" : "",
+                                            "updateGraph" : row[15],
+                                            "updateGraphFile" : self.readFile(self.pathToTestSuite+pathToTest+row[15]),
+                                            "updateLabel" : row[17],
+                                            "updateRequest" : row[13],
+                                            "updateRequestFile" : self.readFile(self.pathToTestSuite+pathToTest+row[13]),
+                                            "updateResult" : row[16],
+                                            "updateResultFile" : self.readFile(self.pathToTestSuite+pathToTest+row[16])}
         except:
-            pass
+            print(file + " does not exist !")
 
     def readFile(self, file):
-        data = open(file).read().replace('\n', ' ')
+        try:
+            data = open(file).read()
+        except:
+            data = ""
         return data
 
     def index(self, graphPath):
         index = os.popen(
-            f'ulimit -Sn 1048576; cat {graphPath} | ../qlever-code/build/IndexBuilderMain -F ttl -f - -i TestSuite -s TestSuite.settings.json | tee TestSuite.index-log.txt')
+            f"ulimit -Sn 1048576; cat {graphPath} | {self.pathToBinaries}/IndexBuilderMain -F ttl -f - -i TestSuite -s TestSuite.settings.json | tee TestSuite.index-log.txt")
         return index.read()
 
     def removeIndex(self):
-        os.popen('rm -f TestSuite.index.* TestSuite.vocabulary.* TestSuite.prefixes TestSuite.meta-data.json TestSuite.index-log.txt')
+        os.popen("rm -f TestSuite.index.* TestSuite.vocabulary.* TestSuite.prefixes TestSuite.meta-data.json TestSuite.index-log.txt")
 
     def startSever(self):
         start = os.popen(
-            '../qlever-code/build/ServerMain -i TestSuite -j 8 -p 7001 -m 4 -c 2 -e 1 -k 100 -a "TestSuite_3139118704" > TestSuite.server-log.txt &')
+            f"{self.pathToBinaries}/ServerMain -i TestSuite -j 8 -p 7001 -m 4 -c 2 -e 1 -k 100 -a 'TestSuite_3139118704' > TestSuite.server-log.txt &")
         # Wait for the server to be ready
         maxRetries = 8  # Maximum number of retries
         retryInterval = 0.25  # Time interval between retries in seconds
-        url = 'http://mint-work:7001'
+        url = "http://mint-work:7001"
         headers = {
-            'Content-type': 'application/sparql-query'
+            "Content-type": "application/sparql-query"
         }
         testQuery = "SELECT ?s ?p ?o { ?s ?p ?o } LIMIT 1"
         for i in range(maxRetries):
@@ -158,7 +123,7 @@ class TestSuite:
 
     def stopServer(self):
         os.popen(
-            'pkill -f "../qlever-code/build/ServerMain -i [^ ]*TestSuite"')
+            f"pkill -f '{self.pathToBinaries}/ServerMain -i [^ ]*TestSuite'")
 
     def query(self, query, resultFile):
         """ 
@@ -167,15 +132,15 @@ class TestSuite:
         """
         resultFormat = resultFile[resultFile.rfind(".") + 1:]
         if resultFormat == "csv":
-            type = 'text/csv'
+            type = "text/csv"
         elif resultFormat == "tsv":
-            type = 'text/tab-separated-values'
+            type = "text/tab-separated-values"
         else:
-            type = 'application/sparql-results+json'
-        url = 'http://mint-work:7001'
+            type = "application/sparql-results+json"
+        url = "http://mint-work:7001"
         headers = {
-            'Accept': f'{type}',
-            'Content-type': 'application/sparql-query'
+            "Accept": f"{type}",
+            "Content-type": "application/sparql-query"
         }
         response = requests.post(url, headers=headers, data=query)
 
@@ -186,16 +151,16 @@ class TestSuite:
             return False
 
         for element1, element2 in zip(row1, row2):
-            if not self.compareValues(element1.split("^")[0], element2.split("^")[0]):
+            if not self.compareValues(element1.split("^")[0], element2.split("^")[0], True):
                 return False
         return True
 
-    def compareValues(self, value1: str, value2: str):
+    def compareValues(self, value1: str, value2: str, isNumber: bool):
         # In most cases the values are in the same representation
         if value1 == value2:
             return True
         # Handle exceptions ex. 30000 == 3E4
-        if value1[0].isnumeric():
+        if value1[0].isnumeric() and value2[0].isnumeric() and isNumber:
             if float(value1) == float(value2):
                 return True
         else:  # Handle exceptions integer = int
@@ -206,29 +171,45 @@ class TestSuite:
     def compareDictionaries(self, dict1, dict2) -> bool:
         dict1Copy = dict(dict1)
         dict2Copy = dict(dict2)
+        numberTypes = [
+        "http://www.w3.org/2001/XMLSchema#integer",
+        "http://www.w3.org/2001/XMLSchema#double",
+        "http://www.w3.org/2001/XMLSchema#decimal",
+        "http://www.w3.org/2001/XMLSchema#float"
+        ]
+        isNumber = False
+        if "datatype" in dict1:
+            if dict1["datatype"] in numberTypes:
+                isNumber = True
+        if "datatype" in dict2:
+            pass
         # Remove the key from the dictionaries if it exists and 
         # has the same value
         for key, value in dict1.items():
             if key in dict2Copy:
-                if self.compareValues(value, dict2Copy[key]):
+                if self.compareValues(value, dict2Copy[key], isNumber):
                     del dict2Copy[key]
                     del dict1Copy[key]
         return not dict1Copy and not dict2Copy
 
     def compare(self, resultPath, queryResult, test, typeName, resultFormat):
-        if typeName == "QueryEvaluationTest" and resultFormat == "srx":
-            jsonDict = jsonToDict(queryResult[1])
-            xmlDict = xmlToDict(resultPath)
-            self.testData[test[2]]["expected"] = str(xmlDict)
-            self.testData[test[2]]["got"] = str(jsonDict)
-            return self.compareJSON(jsonDict, xmlDict)
-        elif resultFormat == "csv" or resultFormat == "tsv":
+        if typeName == "QueryEvaluationTest" and (resultFormat == "srx" or resultFormat == "srj" ):
+            gotDict = self.jsonToDict(queryResult[1])
+            if resultFormat == "srx":
+                expectedDict = self.xmlToDict(resultPath)
+            else:
+                expectedDict = self.jsonToDict(self.readFile(resultPath))
+            self.testData[test[2]]["expected"] = str(expectedDict)
+            self.testData[test[2]]["got"] = str(gotDict)
+            return self.compareJSON(gotDict, expectedDict)
+        elif (resultFormat == "csv" or resultFormat == "tsv"):
             return self.compareSV(resultPath, queryResult, resultFormat, test)
+        return (False, "", "")
             
     def compareSV(self, resultPath, queryResult, resultFormat, test):
-        with open(resultPath, 'r') as resultFile:
-            expectedResult = csvAndTsvtoArray(resultFile.read(), resultFormat)
-        result = csvAndTsvtoArray(queryResult[1], resultFormat)
+        with open(resultPath, "r") as resultFile:
+            expectedResult = self.csvAndTsvtoArray(resultFile.read(), resultFormat)
+        result = self.csvAndTsvtoArray(queryResult[1], resultFormat)
         self.testData[test[2]]["expected"] = str(expectedResult).replace("<", "&lt;").replace(">", "&gt;").replace("],", "],\n")
         self.testData[test[2]]["got"] = str(result).replace("<", "&lt;").replace(">", "&gt;").replace("],", "],\n")
         resultCopy = result.copy()  
@@ -246,9 +227,9 @@ class TestSuite:
                 expectedResultCopy.remove(row2Delete)
         
         if len(resultCopy) == 0 and len(expectedResultCopy) == 0:
-            return True
+            return (True, expectedResultCopy, resultCopy)
         else:
-            return False
+            return (True, expectedResultCopy, resultCopy)
 
     def compareJSON(self, result: dict, expected: dict):
         """
@@ -260,10 +241,10 @@ class TestSuite:
         # Compare the head
         if expected["head"]["vars"] != result["head"]["vars"]:
             if len(expected["head"]["vars"]) != len(result["head"]["vars"]):
-                return False
+                return (False, expectedCopy, resultCopy)
             for var in expected["head"]["vars"]:
                 if var not in result["head"]["vars"]:
-                    return False
+                    return (False, expectedCopy, resultCopy)
         del resultCopy["head"]
         del expectedCopy["head"]
 
@@ -271,7 +252,7 @@ class TestSuite:
         if len(
                 expected["results"]["bindings"]) != len(
                 result["results"]["bindings"]):
-            return False
+            return (False, expectedCopy, resultCopy)
         for i in range(len(expected["results"]["bindings"])):
             for j in range(len(resultCopy["results"]["bindings"])):
                 if expected["results"]["bindings"][i].keys(
@@ -299,73 +280,94 @@ class TestSuite:
                     del expectedCopy["results"]
 
         if not expectedCopy and not resultCopy:
-            return True
+            return (True, expectedCopy, resultCopy)
         else:
-            return False
+
+            return (False, expectedCopy, resultCopy)
 
     def runTests(self):
         for graph in self.testsOfGraph:
-            graphPath = PATH_TO_TESTS + self.testData[self.testsOfGraph[graph][0][2]]["path"] + graph
+            graphPath = self.pathToTestSuite + graph
+            print(graphPath)
             status = "Failed"
-            errorMessage = ""
+            errorType = ""
 
             self.stopServer()
             self.removeIndex()
             indexMessage = self.index(graphPath)
             if indexMessage.find("Index build completed") == -1:
-                errorMessage = "INDEX BUILD ERROR"
+                errorType = "INDEX BUILD ERROR"
                 for test in self.testsOfGraph[graph]:
                     self.testData[test[2]]["indexLog"] = str(indexMessage)
                     self.testData[test[2]]["status"] = status
-                    self.testData[test[2]]["errorMessage"] = errorMessage
+                    self.testData[test[2]]["errorType"] = errorType
                     self.testData[test[2]]["status"] = "Failed"
                 continue
 
             serverResult = self.startSever()
             if serverResult[0] != 200:
-                errorMessage = "SERVER ERROR"
+                errorType = "SERVER ERROR"
                 self.testData[test[2]]["status"] = status
-                self.testData[test[2]]["errorMessage"] = errorMessage
+                self.testData[test[2]]["errorType"] = errorType
                 continue
 
             for test in self.testsOfGraph[graph]:
                 typeName = self.testData[test[2]]["typeName"]
                 self.testData[test[2]]["indexLog"] = str(indexMessage)
-                queryPath = PATH_TO_TESTS + self.testData[self.testsOfGraph[graph][0][2]]["path"] + test[0]
-                resultPath = PATH_TO_TESTS + self.testData[self.testsOfGraph[graph][0][2]]["path"] + test[1]
-
-                queryString = self.readFile(queryPath)
+                queryPath = self.pathToTestSuite + self.testData[self.testsOfGraph[graph][0][2]]["path"] + test[0]
+                resultPath = self.pathToTestSuite + self.testData[self.testsOfGraph[graph][0][2]]["path"] + test[1]
+                print(queryPath)
+                queryString = self.readFile(queryPath).replace("\n", " ")
                 self.testData[test[2]]["querySent"] = queryString
                 resultFormat = test[1][test[1].rfind(".") + 1:]
                 queryResult = self.query(queryString, resultFormat)
 
                 if queryResult[0] == 200:
-                    if self.compare(resultPath, queryResult, test, typeName, resultFormat):
+
+                    result = self.compare(resultPath, queryResult, test, typeName, resultFormat)
+                    self.testData[test[2]]["expectedDif"] = str(result[1])
+                    self.testData[test[2]]["resultDif"] = str(result[2])
+                    if result[0]:
                         status = "Passed"
                     else:
-                        errorMessage = "RESULTS NOT THE SAME"
+                        errorType = "RESULTS NOT THE SAME"
                 else:
-                    errorMessage = "Undefined error"
+                    errorType = "Undefined error"
                     if queryResult[1].find("exception") != -1:
-                        errorMessage = "QUERY EXCEPTION"
+                        errorType = "QUERY EXCEPTION"
                     if queryResult[1].find("HTTP Request") != -1:
-                        errorMessage = "REQUEST ERROR"
+                        errorType = "REQUEST ERROR"
                     self.testData[test[2]]["queryLog"] = str(queryResult[1])
 
+                if typeName == "PositiveSyntaxTest11" or typeName == "NegativeSyntaxTest11":
+                    if typeName == "PositiveSyntaxTest11":
+                        if errorType != "":
+                            status = "Failed"
+                        else:
+                            status = "Passed"
+                            errorType = ""
+                    if typeName == "NegativeSyntaxTest11":
+                        if errorType == "QUERY EXCEPTION":
+                            status = "Passed"
+                            errorType = ""
+                        else:
+                            status = "Failed"
+                            errorType = "EXPECTED: QUERY EXCEPTION ERROR"
                 self.testData[test[2]]["status"] = status
-                self.testData[test[2]]["errorMessage"] = errorMessage
+                self.testData[test[2]]["errorType"] = errorType
+
         self.removeIndex()
 
-    def extractTests(self):
+    def extractTests(self, file):
         # Currently only for the folder aggregates
-        folderPaths = ["aggregates/", "csv-tsv-res/"]
-        queries = ["queryeval.rq", "csvformat.rq"]
-        outputCsvPath = 'listOfTests.csv'
+        dirPaths = self.readFile("directories.txt").split("\n")
+        queries = ["Query.rq","Syntax.rq","Protocol.rq","Update.rq"]
+        outputCsvPath = file
         csvRows = []
 
-        for path in folderPaths:
+        for path in dirPaths:
             self.removeIndex()
-            self.index(PATH_TO_TESTS + path + "manifest.ttl")
+            self.index(self.pathToTestSuite + path + "/manifest.ttl")
             self.startSever()
             for query in queries:
                 query = self.query(self.readFile(query), "csv")
@@ -377,31 +379,90 @@ class TestSuite:
                     for row in csvReader:
                         csvRows.append(row)
             self.stopServer()
-
-        with open(outputCsvPath, 'w', newline='') as csvfile:
+        with open(outputCsvPath, "w", newline="") as csvfile:
             csv_writer = csv.writer(csvfile)
             csv_writer.writerows(csvRows)
 
     def generateJSONFile(self):
         # Convert the dictionary to a JSON string
-        # `indent` parameter adds readability
-        json_string = json.dumps(self.testData, indent=4)
+        jsonString = json.dumps(self.testData, indent=4)
 
-        with open("RESULTS.json", "w") as json_file:
-            json_file.write(json_string)
+        with open("./www/RESULTS.json", "w") as jsonFile:
+            jsonFile.write(jsonString)
 
+    def jsonToDict(self, string):
+        json_dict = json.loads(string)
+        return json_dict
+
+    def xmlToDict(self, file):
+        tree = ElementTree.parse(file)
+        root = tree.getroot()
+        # Define the XML namespace
+        ns = {"sparql": "http://www.w3.org/2005/sparql-results#"}
+
+        # Init the output dictionary
+        output = {"head": {"vars": []}, "results": {"bindings": []}}
+
+        # head
+        head = root.find("sparql:head", ns)
+        if head is not None:
+            for variable in head.findall("sparql:variable", ns):
+                name = variable.attrib["name"]
+                output["head"]["vars"].append(name)
+
+        # results
+        results = root.find("sparql:results", ns)
+        if results is not None:
+            for result in results.findall("sparql:result", ns):
+                binding_dict = {}
+                for binding in result.findall("sparql:binding", ns):
+                    name = binding.attrib["name"]
+                    value = {}
+
+                    # URI
+                    uri = binding.find("sparql:uri", ns)
+                    if uri is not None:
+                        value["type"] = "uri"
+                        value["value"] = uri.text
+
+                    # Literal
+                    literal = binding.find("sparql:literal", ns)
+                    if literal is not None:
+                        value["type"] = "literal"
+                        value["value"] = literal.text
+                        datatype = literal.get("datatype", "")
+                        if datatype != "":
+                            value["datatype"] = datatype
+
+                    binding_dict[name] = value
+
+                output["results"]["bindings"].append(binding_dict)
+
+        return output
+
+    def csvAndTsvtoArray(self, string, type):
+        result = []
+
+        with StringIO(string) as io:
+            delimiter = "," if type == "csv" else "\t"  # Determine the delimiter
+            csvReader = csv.reader(io, delimiter=delimiter)
+            for row in csvReader:
+                result.append(row)
+
+        return result
 
 def main():
     args = sys.argv[1:]
-    if len(args) < 1 or len(args) > 2:
-        print(f"Usage: python3 {sys.argv[0]} <file>")
+    if len(args) < 2 or len(args) > 3:
+        print(f"Usage: python3 {sys.argv[0]} <path to binaries> <file> [extract]")
         sys.exit()
     testSuite = TestSuite(args[0])
-    if len(args) == 2:
+    if len(args) == 3:
         print("GET TESTS!")
-        testSuite.extractTests()
+        testSuite.extractTests(args[1])
     else:
         print("RUN TESTS!")
+        testSuite.initializeTests(args[1])
         testSuite.runTests()
         testSuite.generateJSONFile()
     print("DONE!")
@@ -409,13 +470,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# https://stackoverflow.com/questions/2148119/how-to-convert-an-xml-string-to-a-dictionary
-# https://www.xml.com/pub/a/2006/05/31/converting-between-xml-and-json.html
-# ulimit -Sn 1048576; cat .ttl | ../qlever-code/build/IndexBuilderMain -F ttl -f - -i TestSuite -s TestSuite.settings.json | tee TestSuite.index-log.txt'
-# ../../qlever-code/build/ServerMain -i TestSuite -j 8 -p 7001 -m 4 -c 2 -e 1 -k 100 -a "TestSuite_3139118704" > TestSuite.server-log.txt &
-# pkill -f "../../qlever-code/build/ServerMain -i [^ ]*TestSuite"
-# rm -f TestSuite.index.* TestSuite.vocabulary.* TestSuite.prefixes TestSuite.meta-data.json TestSuite.index-log.txt
-# curl http://mint-work:7001 -H "Accept: text/tab-separated-values" -H
-# "Content-type: application/sparql-query" --data "SELECT * WHERE { ?s ?p ?o } LIMIT 10"

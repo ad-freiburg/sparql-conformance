@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="./index.css">
+    <title>Fixed table</title>
+    <script src="jquery-3.7.1.min.js"></script>
+</head>
+
+<body>
+<div class="heading">
+    <h1>SPARQL Testsuite results</h1>
+</div>
+<div class="outer-wrapper">
+    <div class="search-wrapper">
+        <label for="searchColumn">Search Column:</label>
+        <select id="search-mode">
+            <option value="name">Test Name</option>
+            <option value="typeName">Test Type</option>
+            <option value="status">Status</option>
+            <option value="errorType">Error Type</option>
+        </select>
+        <input id="search-input" type="text" class="form-control" placeholder="Search...">
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <th data-column="name" data-order="desc">Test Name</th>
+                <th data-column="typeName" data-order="desc">Test Type</th>
+                <th data-column="status" data-order="desc">Status</th>
+                <th data-column="errorType" data-order="desc">Error Type</th>
+            </thead>
+            <tbody id="table-body">
+            </tbody>
+        </table>
+    </div>
+    <div class="result-wrapper">
+        <table id="result-table">
+            <thead>
+                <th><button id="general">General</button></th>
+                <th><button id="index">Index</button></th>
+                <th><button id="server">Server</button></th>
+                <th><button id="query">Query</button></th>
+            </thead>
+        </table>
+        <div id="result-wrapper-general"></div>
+        <div id="result-wrapper-index">Test</div>
+        <div id="result-wrapper-server">Test2</div>
+        <div id="result-wrapper-query">Test4</div>
+    </div>
+</div>
+<script src="index.js"></script>
+</body>
+</html>

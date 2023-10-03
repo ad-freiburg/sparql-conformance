@@ -6,10 +6,10 @@ PREFIX qt:     <http://www.w3.org/2001/sw/DataAccess/tests/test-query#>
 PREFIX dawgt:  <http://www.w3.org/2001/sw/DataAccess/tests/test-dawg#>
 PREFIX sparql: <http://www.w3.org/ns/sparql#>
 
-SELECT ?test ?type ?name ?feature ?comment ?approval ?approvedBy ?query ?data ?result
+SELECT ?test ?type ?name ?feature ?comment ?approval ?approvedBy ?query ?data ?result ?regime ?action ?resultData ?request ?graphData ?graph ?resultGraph ?label ?resultLabel
 WHERE {
-    ?test rdf:type mf:QueryEvaluationTest .
-    ?test rdf:type ?type
+    ?test rdf:type mf:CSVResultFormatTest .
+    ?test rdf:type ?type .
     OPTIONAL {?test mf:name ?name }.
     OPTIONAL {?test mf:feature ?feature }.
     OPTIONAL {?test rdfs:comment ?comment }.
