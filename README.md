@@ -9,7 +9,7 @@ Extract the tests with:<br>
 python3 testsuite.py [relative path to your qlever code binaries] [file name] extract
 ```
 <br>
-Example: python3 testsuite.py ../qlever-code/build listOfTests.csv extract
+Example: python3 testsuite.py ../qlever-code/build listOfTests.csv extract<br>
 This will create a file consisting of all tests.<br>
 You can run those tests with:<br>
 
@@ -18,4 +18,4 @@ python3 testsuite.py [relative path to your qlever code binaries] [file name]
 ```
 
 <br>
-Example: python3 testsuite.py ../qlever-code/build listOfTests.csv
+Example: python3 testsuite.py ../qlever-code/build listOfTests.csv<br>
