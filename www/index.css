@@ -14,10 +14,8 @@
 h1 {
     color: black;
     font-weight: bold;
-    
     background: transparent;
     padding: 7px;
-    
 }
 
 .outer-wrapper {
@@ -34,30 +32,21 @@ h1 {
     height: fit-content;
     max-height: 66.4vh;
     margin-top: 22px;
-    
     margin: 15px;
     padding-bottom: 20px;
-    
-    
 }
 
 .result-wrapper {
-
     overflow-y: scroll;
     overflow-x: scroll;
     height: fit-content;
     max-height: 66.4vh;
     margin-top: 22px;
-    
     margin: 15px;
     padding-bottom: 20px;
-    
-    
 }
 
 table {
-    
-    min-width: max-content;
     border-collapse: separate;
     border-spacing: 0px;    
     width: 100%;
@@ -111,5 +100,20 @@ button {
     background-color: #aaaaaa;
 }
 .row-selected {
-    background-color: #aaaaaa;
+    background-color: black;
+    color: white;
+    font-weight: bold;
+}
+
+#th-name{
+    width: fit-content;
+}
+#th-type{
+    min-width: 10%;
+}
+#th-status{
+    min-width: 10%;
+}
+#th-error{
+    min-width: 10%;
 }

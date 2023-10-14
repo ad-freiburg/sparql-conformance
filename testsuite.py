@@ -33,8 +33,8 @@ class TestSuite:
                     lastHashtagIndex = row[1].rfind("#")
                     typeOfTest = row[1][lastHashtagIndex + 1:]
 
-                    if typeOfTest == "QueryEvaluationTest" or "CSVResultFormatTest" or "PositiveSyntaxTest11" or "NegativeSyntaxTest11":
-                        if typeOfTest == "PositiveSyntaxTest11" or  "NegativeSyntaxTest11":
+                    if typeOfTest == "QueryEvaluationTest" or typeOfTest == "CSVResultFormatTest" or typeOfTest == "PositiveSyntaxTest11" or typeOfTest == "NegativeSyntaxTest11":
+                        if typeOfTest == "PositiveSyntaxTest11" or  typeOfTest == "NegativeSyntaxTest11":
                             if row[8] == "":
                                 row[8] = "manifest.ttl"
                             if row[7] == "" and row[11] != "":

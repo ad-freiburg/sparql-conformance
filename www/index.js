@@ -25,11 +25,6 @@ fetch("RESULTS.json")
 
 		}
 		buildTable(currentArray)
-        if (currentTestName != -1) {
-            console.log(currentTestName)
-            $("tr").removeClass("row-selected")
-            $("#"+currentTestName).addClass("row-selected")
-        }
 	})
 
     $("table").on("click", "tr", function() {
@@ -45,10 +40,6 @@ fetch("RESULTS.json")
 	})
 
     $("button").on("click", function() {
-        if (currentTestName != -1) {
-            $("tr").removeClass("row-selected")
-            $("#"+currentTestName).addClass("row-selected")
-        }
         $("button").removeClass("button-pressed");
         $(this).addClass("button-pressed")
         $("#result-wrapper-general").hide()
@@ -80,10 +71,6 @@ fetch("RESULTS.json")
         var mode = $("#search-mode").val()
         searchTable(value, mode)
         buildTable(currentArray)
-        if (currentTestName != -1) {
-            $("tr").removeClass("row-selected")
-            $("#"+currentTestName).addClass("row-selected")
-        }
 	})
     function searchTable(value, mode){
         var newArray = []
@@ -122,6 +109,9 @@ fetch("RESULTS.json")
             var row = document.createElement("tr");
             row.setAttribute("data-name", test.name);
             row.setAttribute("id", test.name);
+            if (test.name == currentTestName) {
+                row.setAttribute("class", "row-selected")
+            }
 
             var testNameCell = document.createElement("td");
             testNameCell.textContent = test.name;
