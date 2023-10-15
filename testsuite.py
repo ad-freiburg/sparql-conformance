@@ -112,14 +112,12 @@ class TestSuite:
             try:
                 response = requests.post(url, headers=headers, data=testQuery)
                 if response.status_code == 200:
-                    break
+                    return (200, "")
             except requests.exceptions.RequestException:
                 pass 
             time.sleep(retryInterval)
-        else:
-            return (500, response.text)
 
-        return (200, "")
+        return (500, response.text)
 
     def stopServer(self):
         os.popen(
@@ -366,6 +364,7 @@ class TestSuite:
         csvRows = []
 
         for path in dirPaths:
+            print(path)
             self.removeIndex()
             self.index(self.pathToTestSuite + path + "/manifest.ttl")
             self.startSever()

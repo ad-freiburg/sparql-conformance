@@ -141,40 +141,64 @@ fetch("RESULTS.json")
         var resultResults = document.getElementById("result-wrapper-server")
         var resultQuery = document.getElementById("result-wrapper-query")
 
+
         resultGeneral.innerHTML = `
-        <strong>${entry.name}</strong> - Status: <span class="status">${entry.status}</span>
-        <div class="item-details">
-        <p><strong>Test:</strong> <a href="${entry.test}" target="_blank">${entry.test}</a></p>
-        <p><strong>Type:</strong> ${entry.type}</p>
-        <p><strong>Feature:</strong> ${entry.feature}</p>
-        <p><strong>Error Type:</strong> ${entry.errorType}</p>
-        <p><strong>Error Message:</strong> ${entry.errorMessage}</p>
+        <div class="topic-wrapper">
+            <p class="heading"><strong>Test Name:</strong></p>
+            <div class="results-wrapper"><pre>${entry.name}</pre></div>
+            <p class="heading"><strong>Test Status:</strong></p>
+            <div class="results-wrapper"><pre>${entry.status}</pre></div>
+            <p class="heading"><strong>Test:</strong></p>
+            <div class="results-wrapper"><pre>${entry.test}</pre></div>
+            <p class="heading"><strong>Test Type:</strong></p>
+            <div class="results-wrapper"><pre>${entry.Type}</pre></div>
+            <p class="heading"><strong>Test Feature:</strong></p>
+            <div class="results-wrapper"><pre>${entry.Feature}</pre></div>
+            <p class="heading"><strong>Error Type:</strong></p>
+            <div class="results-wrapper"><pre>${entry.errorType}</pre></div>
+            <p class="heading"><strong>Test Feature:</strong></p>
+            <div class="results-wrapper"><pre>${entry.Feature}</pre></div>
         </div>
         `;
         resultIndex.innerHTML = `
-        <div class="item-details">
-            <p><strong>Index Filename:</strong> <pre>${entry.graph}</pre></p>
-            <p><strong>Index File:</strong> <pre>${entry.graphFile}</pre></p>
-            <p><strong>Index Log:</strong> <pre>${entry.indexLog}</pre></p>
+        <div class="topic-wrapper">
+            <p class="heading"><strong>Index Filename:</strong></p>
+            <div class="results-wrapper"><pre>${entry.graph}</pre></div>
+            <p class="heading"><strong>Index File:</strong></p>
+            <div class="results-wrapper"><pre>${entry.graphFile}</pre></div>
+            <p class="heading"><strong>Index Build Log:</strong></p>
+            <div class="results-wrapper"><pre>${entry.indexLog}</pre></div>
         </div>
         `;
         resultResults.innerHTML = `
-        <div class="item-details">
-        <p><strong>Expected:</strong> <pre>${entry.expected}</pre></p>
-        <p><strong>Got:</strong> <pre>${entry.got}</pre></p>
-        <p><strong>Difference</strong></p>
-        <p><strong>Expected:</strong> <pre>${entry.expectedDif}</pre></p>
-        <p><strong>Got:</strong> <pre>${entry.resultDif}</pre></p>
+        <div class="topic-wrapper">
+            <p class="heading"><strong>Expected Query Result:</strong></p>
+            <div class="results-wrapper"><pre>${entry.expected}</pre></div>
+            <p class="heading"><strong>Query Result:</strong></p>
+            <div class="results-wrapper"><pre>${entry.got}</pre></div>
+            <p class="heading"><strong><b>Difference</b></strong></p>
+            <p class="heading"><strong>Expected result after comparing:</strong></p>
+            <div class="results-wrapper"><pre>${entry.expectedDif}</pre></div>
+            <p class="heading"><strong>Query result after comparing:</strong></p>
+            <div class="results-wrapper"><pre>${entry.resultDif}</pre></div>
         </div>
         `;
         resultQuery.innerHTML = `
-        <div class="item-details">
-        <p><strong>Query Filename:</strong> <pre>${entry.query}</pre></p>
-        <p><strong>Query File:</strong> <pre>${entry.queryFile}</pre></p>
-        <p><strong>Result Filename:</strong> <pre>${entry.result}</pre></p>
-        <p><strong>Result File:</strong> <pre>${entry.resultFile}</pre></p>
-        <p><strong>Query Sent:</strong> <pre>${entry.querySent}</pre></p>
-        <p><strong>Query Log:</strong> <pre>${entry.queryLog}</pre></p>
+        <div class="topic-wrapper">
+            <p class="heading"><strong>Query Filename:</strong></p>
+            <div class="results-wrapper"><pre>${entry.query}</pre></div>
+            <p class="heading"><strong>Query File:</strong></p>
+            <div class="results-wrapper"><pre>${entry.queryFile}</pre></div>
+            <p class="heading"><strong>Result Filename:</strong></p>
+            <div class="results-wrapper"><pre>${entry.result}</pre></div>
+            <p class="heading"><strong>Result File:</strong></p>
+            <div class="results-wrapper"><pre>${entry.resultFile}</pre></div>
+            <p class="heading"><strong>Query Sent:</strong></p>
+            <div class="results-wrapper"><pre>${entry.querySent}</pre></div>
+            <p class="heading"><strong>Query Log:</strong></p>
+            <div class="results-wrapper"><pre>${entry.queryLog}</pre></div>
+            <p class="heading"><strong>Test Feature:</strong></p>
+            <div class="results-wrapper"><pre>${entry.Feature}</pre></div>
         </div>
         `;
     }

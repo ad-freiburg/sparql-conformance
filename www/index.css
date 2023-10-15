@@ -5,12 +5,19 @@
 
 }
 
-.heading {
+.top-heading {
     border: 1px solid #CFCFCF;
     width: 68em;
     padding: 1em 1em 0.6em;
     margin: 0.5em auto 0.5em;
 }
+
+.heading {
+    border: 1px solid #CFCFCF;
+    padding: 1em 1em 0.6em;
+    margin: 0.5em auto 0.5em;
+}
+
 h1 {
     color: black;
     font-weight: bold;
@@ -25,6 +32,7 @@ h1 {
     margin: 0.5em auto 0.5em;
     max-height: fit-content;
 }
+
 .table-wrapper {
     border: 0.5px solid black;
     overflow-y: scroll;
@@ -37,6 +45,28 @@ h1 {
 }
 
 .result-wrapper {
+    width: 100%;
+}
+
+.results-wrapper {
+    overflow-y: scroll;
+    overflow-x: scroll;
+    margin: 10px;
+    padding: 10px;
+    max-height: auto;
+    background-color: rgb(235, 235, 235);
+}
+
+#result-wrapper-index {
+    overflow-y: scroll;
+    overflow-x: scroll;
+    height: fit-content;
+    max-height: 66.4vh;
+    margin-top: 22px;
+    margin: 15px;
+    padding-bottom: 20px;
+}
+#result-wrapper-general {
     overflow-y: scroll;
     overflow-x: scroll;
     height: fit-content;
@@ -52,7 +82,7 @@ table {
     width: 100%;
 }
 
-table th{
+table th {
     background-color: #aaaaaa;
     position: sticky; 
     top: 0px;
@@ -99,21 +129,22 @@ button {
 .button-pressed {
     background-color: #aaaaaa;
 }
+
 .row-selected {
     background-color: black;
     color: white;
     font-weight: bold;
 }
 
-#th-name{
+#th-name {
     width: fit-content;
 }
-#th-type{
+#th-type {
     min-width: 10%;
 }
-#th-status{
+#th-status {
     min-width: 10%;
 }
-#th-error{
+#th-error {
     min-width: 10%;
 }
