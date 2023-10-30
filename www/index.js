@@ -3,6 +3,7 @@ $(document).ready(async function () {
     var selectedRun = Object.keys(jsonData)[0];
     var selectedRun2 = -1;
     var jsonArray = await getTestRun(selectedRun, selectedRun2, jsonData);
+    jsonArray.splice(jsonArray.length - 1, 1);
     var currentArray = jsonArray;
     var currentTestName = -1;
     buildTable(currentArray, currentTestName);
@@ -61,6 +62,7 @@ $(document).ready(async function () {
         $("#result-wrapper-index").hide();
         $("#result-wrapper-query").hide();
         jsonArray = await getTestRun(selectedRun, selectedRun2, jsonData);
+        jsonArray.splice(jsonArray.length - 1, 1);
         currentArray = jsonArray
         currentTestName = -1
         buildTable(currentArray, currentTestName);
@@ -170,12 +172,22 @@ function buildRunTable(jsonData){
     var tableBody = document.getElementById("table-body-runs");
     const keys = Object.keys(jsonData);
     for (var i in keys) {
+        var info = jsonData[keys[i]].info;
         var row = document.createElement("tr");
         row.setAttribute("data-name", keys[i]);
         row.setAttribute("id", keys[i]);
         var testNameCell = document.createElement("td");
         testNameCell.textContent = keys[i];
         row.appendChild(testNameCell);
+        var testTestsCell = document.createElement("td");
+        testTestsCell.textContent = info.tests;
+        row.appendChild(testTestsCell);
+        var testPassedCell = document.createElement("td");
+        testPassedCell.textContent = info.passed;
+        row.appendChild(testPassedCell);
+        var testFailedCell = document.createElement("td");
+        testFailedCell.textContent = info.failed;
+        row.appendChild(testFailedCell);
 
         tableBody.appendChild(row);
     }

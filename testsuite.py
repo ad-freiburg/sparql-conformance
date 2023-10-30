@@ -12,6 +12,9 @@ class TestSuite:
         self.name = name
         self.pathToBinaries = path
         self.testData = {}
+        self.tests = 0
+        self.passed = 0
+        self.failed = 0
         # QLever changes that are considered the same
         self.alias = {
             "http://www.w3.org/2001/XMLSchema#integer": "http://www.w3.org/2001/XMLSchema#int",
@@ -26,6 +29,7 @@ class TestSuite:
                 # row:
                 # test,type,name,feature,comment,approval,approvedBy,query,data,result,regime,action,resultData,request,graphData,graph,resultGraph,label,resultLabel
                 for row in csvReader:
+                    self.tests += 1
                     # Extract folder the test is located in
                     lastSlashIndex = row[0].rfind("/")
                     secondLastSlashIndex = row[0].rfind("/", 0, lastSlashIndex - 1)
@@ -354,6 +358,10 @@ class TestSuite:
                             errorType = "EXPECTED: QUERY EXCEPTION ERROR"
                 self.testData[test[2]]["status"] = status
                 self.testData[test[2]]["errorType"] = errorType
+                if status == "Passed":
+                    self.passed += 1
+                elif status == "Failed":
+                    self.failed += 1
 
         self.removeIndex()
 
@@ -391,6 +399,10 @@ class TestSuite:
         else:
             data = {}
         data[self.name] = self.testData
+        data[self.name]["info"] = { "name" : "info",
+                                    "passed" : self.passed,
+                                    "tests" : self.tests,
+                                    "failed" : self.failed}
         with open(filePath, 'w') as file:
             json.dump(data, file, indent=4)
 

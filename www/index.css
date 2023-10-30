@@ -167,3 +167,19 @@ table td {
 #th-error {
     min-width: 10%;
 }
+
+#th-run {
+    width: fit-content;
+}
+
+#th-tests {
+    min-width: 10%;
+}
+
+#th-passed {
+    min-width: 10%;
+}
+
+#th-failed {
+    min-width: 10%;
+}

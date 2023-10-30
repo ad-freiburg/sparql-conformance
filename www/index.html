@@ -18,7 +18,10 @@
             <div class="select-run-wrapper">
                 <table id="select-run-table">
                     <thead>
-                        <th>Select Run</th>
+                        <th id="th-run">Select Run</th>
+                        <th id="th-tests">Tests</th>
+                        <th id="th-passed">Passed</th>
+                        <th id="th-failed">Failed</th>
                     </tr>
                     <tbody id="table-body-runs">
                     </tbody>
@@ -33,6 +36,8 @@
                     <option value="errorType">Error Type</option>
                 </select>
                 <input id="search-input" type="text" class="form-control" placeholder="Search...">
+            </div>
+            <div class="info-wrapper">
             </div>
             <div class="table-wrapper">
                 <table id="test-table">

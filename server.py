@@ -46,10 +46,16 @@ def compare(dict1, dict2):
     result = {}
     for testName in dict2:
         for key in dict2[testName]:
+            if key.lower().find("log") != -1:
+                continue
             if dict1[testName][key] != dict2[testName][key]:
                 if testName not in result:
                     result[testName] = dict1[testName]
                 result[testName][key + "-diff"] = dict2[testName][key]
+        if testName in result:
+            result[testName]["queryLog-diff"] = dict2[testName]["queryLog"]
+            result[testName]["indexLog-diff"] = dict2[testName]["indexLog"]
+
     return result
 
 if __name__ == "__main__":
