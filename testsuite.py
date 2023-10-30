@@ -8,7 +8,8 @@ from io import StringIO
 from xml.etree import cElementTree as ElementTree
 
 class TestSuite:
-    def __init__(self, path):
+    def __init__(self, path, name):
+        self.name = name
         self.pathToBinaries = path
         self.testData = {}
         # QLever changes that are considered the same
@@ -383,11 +384,15 @@ class TestSuite:
             csv_writer.writerows(csvRows)
 
     def generateJSONFile(self):
-        # Convert the dictionary to a JSON string
-        jsonString = json.dumps(self.testData, indent=4)
-
-        with open("./www/RESULTS.json", "w") as jsonFile:
-            jsonFile.write(jsonString)
+        filePath = "./www/RESULTS.json"
+        if os.path.exists(filePath):
+            with open(filePath, 'r') as file:
+                data = json.load(file)
+        else:
+            data = {}
+        data[self.name] = self.testData
+        with open(filePath, 'w') as file:
+            json.dump(data, file, indent=4)
 
     def jsonToDict(self, string):
         json_dict = json.loads(string)
@@ -452,11 +457,11 @@ class TestSuite:
 
 def main():
     args = sys.argv[1:]
-    if len(args) < 2 or len(args) > 3:
-        print(f"Usage: python3 {sys.argv[0]} <path to binaries> <file> [extract]")
+    if len(args) != 3:
+        print(f"Usage to extract tests: python3 {sys.argv[0]} <path to binaries> <file> extract\n Usage to extract tests: python3 {sys.argv[0]} <path to binaries> <file> <name of the run>)")
         sys.exit()
-    testSuite = TestSuite(args[0])
-    if len(args) == 3:
+    testSuite = TestSuite(args[0], args[2])
+    if args[2] == "extract":
         print("GET TESTS!")
         testSuite.extractTests(args[1])
     else:
