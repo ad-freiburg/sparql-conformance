@@ -14,8 +14,8 @@ This will create a file consisting of all tests.<br>
 You can run those tests with:<br>
 
 ```
-python3 testsuite.py [relative path to your qlever code binaries] [file name]
+python3 testsuite.py [relative path to your qlever code binaries] [file name] [name for the test suite run]
 ```
 
 <br>
-Example: python3 testsuite.py ../qlever-code/build listOfTests.csv<br>
+Example: python3 testsuite.py ../qlever-code/build listOfTests.csv first-test<br>
