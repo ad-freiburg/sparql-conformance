@@ -55,7 +55,6 @@ def compare(dict1, dict2):
         if testName in result:
             result[testName]["queryLog-diff"] = dict2[testName]["queryLog"]
             result[testName]["indexLog-diff"] = dict2[testName]["indexLog"]
-
     return result
 
 if __name__ == "__main__":

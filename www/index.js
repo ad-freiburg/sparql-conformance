@@ -3,7 +3,6 @@ $(document).ready(async function () {
     var selectedRun = Object.keys(jsonData)[0];
     var selectedRun2 = -1;
     var jsonArray = await getTestRun(selectedRun, selectedRun2, jsonData);
-    jsonArray.splice(jsonArray.length - 1, 1);
     var currentArray = jsonArray;
     var currentTestName = -1;
     buildTable(currentArray, currentTestName);
@@ -62,7 +61,6 @@ $(document).ready(async function () {
         $("#result-wrapper-index").hide();
         $("#result-wrapper-query").hide();
         jsonArray = await getTestRun(selectedRun, selectedRun2, jsonData);
-        jsonArray.splice(jsonArray.length - 1, 1);
         currentArray = jsonArray
         currentTestName = -1
         buildTable(currentArray, currentTestName);
@@ -129,7 +127,11 @@ async function getTestRun(run1, run2, jsonData) {
     } else {
         result = await fetch("/compare=" + run1 + "+" + run2).then(response => response.json());
     }
-    return convertObjectToArray(result);
+    resultArray = convertObjectToArray(result);
+    if (result.hasOwnProperty('info')) {
+        resultArray.splice(resultArray.length - 1, 1);
+    }
+    return resultArray;
 }
 
 function convertObjectToArray(jsonData) {
@@ -241,7 +243,6 @@ function buildTestInformation(testName, jsonArray){
         { label: "Test Type", value: entry.Type, key: "Type" },
         { label: "Test Feature", value: entry.Feature, key: "Feature" },
         { label: "Error Type", value: entry.errorType, key: "errorType" },
-        { label: "Another Test Feature", value: entry.Feature, key: "Feature" }
     ];
 
     const indexEntries = [
@@ -264,7 +265,6 @@ function buildTestInformation(testName, jsonArray){
         { label: "Result File", value: entry.resultFile, key: "resultFile" },
         { label: "Query Sent", value: entry.querySent, key: "querySent"  },
         { label: "Query Log", value: entry.queryLog, key: "queryLog"  },
-        { label: "Test Feature", value: entry.Feature, key: "Feature"  }
     ];
 
     resultGeneral.innerHTML = generateHTML(generalEntries);
