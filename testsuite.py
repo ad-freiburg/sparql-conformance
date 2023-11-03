@@ -174,8 +174,6 @@ class TestSuite:
         return False
 
     def compareDictionaries(self, dict1, dict2) -> bool:
-        print(dict1)
-        print(dict2)
         dict1Copy = dict(dict1)
         dict2Copy = dict(dict2)
         numberTypes = [
@@ -243,8 +241,6 @@ class TestSuite:
             Compare two dictionaries by deleting identical elements from the dictionaries
             If the resulting dictionaries are empty return True
         """
-        print(result)
-        print(expected)
         resultCopy = dict(result)
         expectedCopy = dict(expected)
         # Compare the head
