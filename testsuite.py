@@ -162,6 +162,8 @@ class TestSuite:
         # In most cases the values are in the same representation
         if value1 == value2:
             return True
+        if value1 is None or value2 is None:
+            return False
         # Handle exceptions ex. 30000 == 3E4
         if value1[0].isnumeric() and value2[0].isnumeric() and isNumber:
             if float(value1) == float(value2):
@@ -304,7 +306,6 @@ class TestSuite:
                     self.testData[test[2]]["indexLog"] = str(indexMessage)
                     self.testData[test[2]]["status"] = status
                     self.testData[test[2]]["errorType"] = errorType
-                    self.testData[test[2]]["status"] = "Failed"
                 continue
 
             serverResult = self.startSever()
@@ -315,6 +316,8 @@ class TestSuite:
                 continue
 
             for test in self.testsOfGraph[graph]:
+                status = "Failed"
+                errorType = ""
                 typeName = self.testData[test[2]]["typeName"]
                 self.testData[test[2]]["indexLog"] = str(indexMessage)
                 queryPath = self.pathToTestSuite + self.testData[self.testsOfGraph[graph][0][2]]["path"] + test[0]
@@ -341,7 +344,6 @@ class TestSuite:
                     if queryResult[1].find("HTTP Request") != -1:
                         errorType = "REQUEST ERROR"
                     self.testData[test[2]]["queryLog"] = str(queryResult[1])
-
                 if typeName == "PositiveSyntaxTest11" or typeName == "NegativeSyntaxTest11":
                     if typeName == "PositiveSyntaxTest11":
                         if errorType != "":
