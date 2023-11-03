@@ -19,3 +19,10 @@ python3 testsuite.py [relative path to your qlever code binaries] [file name] [n
 
 <br>
 Example: python3 testsuite.py ../qlever-code/build listOfTests.csv first-test<br>
+
+Start the sever:<br>
+```
+python3 server.py
+```
+<br>
+open http://localhost:8000/www/index.html
