@@ -162,6 +162,8 @@ class TestSuite:
         # In most cases the values are in the same representation
         if value1 == value2:
             return True
+        if value1 is None or value2 is None:
+            return False
         # Handle exceptions ex. 30000 == 3E4
         if value1[0].isnumeric() and value2[0].isnumeric() and isNumber:
             if float(value1) == float(value2):
@@ -172,6 +174,8 @@ class TestSuite:
         return False
 
     def compareDictionaries(self, dict1, dict2) -> bool:
+        print(dict1)
+        print(dict2)
         dict1Copy = dict(dict1)
         dict2Copy = dict(dict2)
         numberTypes = [
@@ -239,6 +243,8 @@ class TestSuite:
             Compare two dictionaries by deleting identical elements from the dictionaries
             If the resulting dictionaries are empty return True
         """
+        print(result)
+        print(expected)
         resultCopy = dict(result)
         expectedCopy = dict(expected)
         # Compare the head
