@@ -45,6 +45,8 @@ def run(server_class=HTTPServer, handler_class=SimpleHTTPRequestHandler, port=80
 def compare(dict1, dict2):
     result = {}
     for testName in dict2:
+        if testName == "info":
+            continue
         for key in dict2[testName]:
             if key.lower().find("log") != -1:
                 continue
