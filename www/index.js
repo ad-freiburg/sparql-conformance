@@ -95,7 +95,9 @@ $(document).ready(async function () {
     $("#search-input").on("keyup", function(){
         var value = $(this).val();
         var mode = $("#search-mode").val();
-        searchTable(value, mode);
+        console.log(mode)
+        console.log(value)
+        currentArray = searchTable(value, mode, jsonArray);
         buildTable(currentArray, currentTestName);
     });
 });
@@ -141,7 +143,7 @@ function convertObjectToArray(jsonData) {
     return jsonArray;
 }
 
-function searchTable(value, mode){
+function searchTable(value, mode, jsonArray){
     var newArray = [];
 
     for (var i = 0; i < jsonArray.length; i++){
@@ -167,7 +169,7 @@ function searchTable(value, mode){
             newArray.push(jsonArray[i]);
         }
     }
-    currentArray = newArray;
+    return newArray;
 }
 
 function buildRunTable(jsonData){
