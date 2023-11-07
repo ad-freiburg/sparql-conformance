@@ -259,12 +259,11 @@ function buildTestInformation(testName, jsonArray){
         { label: "Expected result after comparing", value: entry.expectedDif, key: "expectedDif" },
         { label: "Query result after comparing", value: entry.resultDif, key: "resultDif" }
     ];
-
     const queryEntries = [
         { label: "Query Filename", value: entry.query, key: "query"  },
         { label: "Query File", value: entry.queryFile, key: "queryFile"  },
         { label: "Result Filename", value: entry.result, key: "result"  },
-        { label: "Result File", value: entry.resultFile, key: "resultFile" },
+        { label: "Result File", value: entry.resultFile.replace(/</g, "&lt;").replace(/>/g, "&gt;"), key: "resultFile" },
         { label: "Query Sent", value: entry.querySent, key: "querySent"  },
         { label: "Query Log", value: entry.queryLog, key: "queryLog"  },
     ];
