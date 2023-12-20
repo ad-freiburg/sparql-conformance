@@ -2,7 +2,7 @@ $(document).ready(async function () {
     var jsonData = await fetch("RESULTS.json").then(response => response.json());
     var selectedRun = Object.keys(jsonData)[0];
     var selectedRun2 = -1;
-    var jsonArray = await getTestRun(selectedRun, selectedRun2, jsonData);
+    var jsonArray = getTestRun(selectedRun, selectedRun2, jsonData);
     var currentArray = jsonArray;
     var currentTestName = -1;
     buildTable(currentArray, currentTestName);
@@ -60,7 +60,7 @@ $(document).ready(async function () {
         $("#result-wrapper-server").hide();
         $("#result-wrapper-index").hide();
         $("#result-wrapper-query").hide();
-        jsonArray = await getTestRun(selectedRun, selectedRun2, jsonData);
+        jsonArray = getTestRun(selectedRun, selectedRun2, jsonData);
         currentArray = jsonArray
         currentTestName = -1
         buildTable(currentArray, currentTestName);
@@ -102,21 +102,7 @@ $(document).ready(async function () {
     });
 });
 
-async function fetchJSON(url) {
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Response error');
-      }
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      throw error;
-    }
-}
-
-async function getTestRun(run1, run2, jsonData) {
+function getTestRun(run1, run2, jsonData) {
     var result = {};
     if (run1 == -1 || run2 == -1) {
         if (run1 != -1) {
@@ -127,7 +113,7 @@ async function getTestRun(run1, run2, jsonData) {
             return;
         }
     } else {
-        result = await fetch("/compare=" + run1 + "+" + run2).then(response => response.json());
+        result = compare(run1, run2)
     }
     resultArray = convertObjectToArray(result);
     if (result.hasOwnProperty('info')) {
@@ -189,9 +175,15 @@ function buildRunTable(jsonData){
         var testPassedCell = document.createElement("td");
         testPassedCell.textContent = info.passed;
         row.appendChild(testPassedCell);
+        var testPassedFailedCell = document.createElement("td");
+        testPassedFailedCell.textContent = info.passedFailed;
+        row.appendChild(testPassedFailedCell);
         var testFailedCell = document.createElement("td");
         testFailedCell.textContent = info.failed;
         row.appendChild(testFailedCell);
+        var testNotTestedCell = document.createElement("td");
+        testNotTestedCell.textContent = info.notTested;
+        row.appendChild(testNotTestedCell);
 
         tableBody.appendChild(row);
     }
@@ -212,6 +204,10 @@ function buildTable(jsonArray, currentTestName){
         var testNameCell = document.createElement("td");
         testNameCell.textContent = test.name;
         row.appendChild(testNameCell);
+
+        var testGroupCell = document.createElement("td");
+        testGroupCell.textContent = test.group;
+        row.appendChild(testGroupCell);
 
         var testTypeCell = document.createElement("td");
         testTypeCell.textContent = test.typeName;
@@ -254,8 +250,8 @@ function buildTestInformation(testName, jsonArray){
     ];
 
     const resultsEntries = [
-        { label: "Expected Query Result", value: entry.expected, key: "expected" },
-        { label: "Query Result", value: entry.got, key: "got" },
+        { label: "Expected Query Result", value: entry.expectedHtml, key: "expectedHtml" },
+        { label: "Query Result", value: entry.gotHtml, key: "gotHtml" },
         { label: "Expected result after comparing", value: entry.expectedDif, key: "expectedDif" },
         { label: "Query result after comparing", value: entry.resultDif, key: "resultDif" }
     ];
@@ -288,12 +284,39 @@ function buildTestInformation(testName, jsonArray){
 function generateHTML(entries) {
     var html = '<div class="topic-wrapper">';
     entries.forEach(entry => {
-        if (entry.value != "") {
+        //if (entry.value != "") {
             html += `
             <p class="heading"><strong>${entry.label}:</strong></p>
             <div class="results-wrapper" id="${entry.key}"><pre>${entry.value}</pre></div>
         `;
-        }
+        console.log(entry.key)
+        console.log(entry.value)
+       // }
     });
     return html += '</div>';
+}
+
+function compare(dict1, dict2) {
+    let result = {};
+    for (let testName in dict2) {
+        if (testName === "info") {
+            continue;
+        }
+        for (let key in dict2[testName]) {
+            if (key.toLowerCase().includes("log")) {
+                continue;
+            }
+            if (dict1[testName][key] !== dict2[testName][key]) {
+                if (!result[testName]) {
+                    result[testName] = {...dict1[testName]};
+                }
+                result[testName][key + "-diff"] = dict2[testName][key];
+            }
+        }
+        if (result[testName]) {
+            result[testName]["queryLog-diff"] = dict2[testName]["queryLog"];
+            result[testName]["indexLog-diff"] = dict2[testName]["indexLog"];
+        }
+    }
+    return result;
 }
