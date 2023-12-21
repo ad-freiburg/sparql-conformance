@@ -32,7 +32,7 @@ $(document).ready(async function () {
         if (testName != currentTestName) {
             $("#test-table tr").removeClass("row-selected");
             $(this).addClass("row-selected");
-            buildTestInformation(testName, jsonArray);
+            buildTestInformation(testName, jsonArray, selectedRun, selectedRun2);
         }
         currentTestName = testName;
     });
@@ -95,8 +95,6 @@ $(document).ready(async function () {
     $("#search-input").on("keyup", function(){
         var value = $(this).val();
         var mode = $("#search-mode").val();
-        console.log(mode)
-        console.log(value)
         currentArray = searchTable(value, mode, jsonArray);
         buildTable(currentArray, currentTestName);
     });
@@ -113,7 +111,7 @@ function getTestRun(run1, run2, jsonData) {
             return;
         }
     } else {
-        result = compare(run1, run2)
+        result = compare(jsonData[run1], jsonData[run2])
     }
     resultArray = convertObjectToArray(result);
     if (result.hasOwnProperty('info')) {
@@ -225,97 +223,90 @@ function buildTable(jsonArray, currentTestName){
     }
 }
 
-function buildTestInformation(testName, jsonArray){
-    var entry = jsonArray.find((test) => test.name === testName);
-    if (typeof entry === "undefined")
+function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2){
+    var testDetails = jsonArray.find((test) => test.name === testName);
+    var testDetails = jsonArray.find((test) => test.name === testName);
+    if (typeof testDetails === "undefined")
         return;
     var resultGeneral = document.getElementById("result-wrapper-general");
     var resultIndex = document.getElementById("result-wrapper-index");
     var resultResults = document.getElementById("result-wrapper-server");
     var resultQuery = document.getElementById("result-wrapper-query");
 
-    const generalEntries = [
-        { label: "Test Name", value: entry.name, key: "name" },
-        { label: "Test Status", value: entry.status, key: "status" },
-        { label: "Test", value: entry.test, key: "test" },
-        { label: "Test Type", value: entry.Type, key: "Type" },
-        { label: "Test Feature", value: entry.Feature, key: "Feature" },
-        { label: "Error Type", value: entry.errorType, key: "errorType" },
+    var generalEntries = [
+        { label: "Test Name", value: testDetails.name, key: "name" },
+        { label: "Test Status", value: testDetails.status, key: "status" },
+        { label: "Error Type", value: testDetails.errorType, key: "errorType" },
     ];
-
+    if (testDetails.errorType == "RESULTS NOT THE SAME" || testDetails.errorType == "Known, intended bevaviour that does not comply with SPARQL standard") {
+        generalEntries.push({ label: "Expected Query Result", value: testDetails.expectedHtml, key: "expectedHtml" });
+        generalEntries.push({ label: "Query Result", value: testDetails.gotHtml, key: "gotHtml" });
+    }
+    if (testDetails.errorType == "QUERY EXCEPTION") {
+        generalEntries.push({ label: "Query File", value: testDetails.queryFile, key: "queryFile" });
+        generalEntries.push({ label: "Query Log", value: testDetails.queryLog, key: "queryLog"  });
+    }
+    //{ label: "Test Type", value: testDetails.Type, key: "Type" },
+    //{ label: "Test Feature", value: testDetails.Feature, key: "Feature" },
     const indexEntries = [
-        { label: "Index Filename", value: entry.graph, key: "graph" },
-        { label: "Index File", value: entry.graphFile, key: "graphFile" },
-        { label: "Index Build Log", value: entry.indexLog, key: "indexLog" }
+        { label: "Index Filename", value: testDetails.graph, key: "graph" },
+        { label: "Index File", value: testDetails.graphFile, key: "graphFile" },
+        { label: "Index Build Log", value: testDetails.indexLog, key: "indexLog" }
     ];
 
     const resultsEntries = [
-        { label: "Expected Query Result", value: entry.expectedHtml, key: "expectedHtml" },
-        { label: "Query Result", value: entry.gotHtml, key: "gotHtml" },
-        { label: "Expected result after comparing", value: entry.expectedDif, key: "expectedDif" },
-        { label: "Query result after comparing", value: entry.resultDif, key: "resultDif" }
+        { label: "Expected Query Result", value: testDetails.expectedHtml, key: "expectedHtml" },
+        { label: "Query Result", value: testDetails.gotHtml, key: "gotHtml" },
+        { label: "Expected result after comparing", value: testDetails.expectedDif, key: "expectedDif" },
+        { label: "Query result after comparing", value: testDetails.resultDif, key: "resultDif" }
     ];
     const queryEntries = [
-        { label: "Query Filename", value: entry.query, key: "query"  },
-        { label: "Query File", value: entry.queryFile, key: "queryFile"  },
-        { label: "Result Filename", value: entry.result, key: "result"  },
-        { label: "Result File", value: entry.resultFile.replace(/</g, "&lt;").replace(/>/g, "&gt;"), key: "resultFile" },
-        { label: "Query Sent", value: entry.querySent, key: "querySent"  },
-        { label: "Query Log", value: entry.queryLog, key: "queryLog"  },
+        { label: "Query Filename", value: testDetails.query, key: "query"  },
+        { label: "Query File", value: testDetails.queryFile, key: "queryFile"  },
+        { label: "Result Filename", value: testDetails.result, key: "result"  },
+        { label: "Result File", value: testDetails.resultFile.replace(/</g, "&lt;").replace(/>/g, "&gt;"), key: "resultFile" },
+        { label: "Query Sent", value: testDetails.querySent, key: "querySent"  },
+        { label: "Query Log", value: testDetails.queryLog, key: "queryLog"  },
     ];
 
-    resultGeneral.innerHTML = generateHTML(generalEntries);
-    resultIndex.innerHTML = generateHTML(indexEntries);
-    resultResults.innerHTML = generateHTML(resultsEntries);
-    resultQuery.innerHTML = generateHTML(queryEntries);
-    for (const k in entry) {
-        if (entry.hasOwnProperty(k)) {
-            if (k.includes("-")) {
-                const parts = k.split("-");
-                var div = document.getElementById(parts[0]);
-                if (div != null) {
-                    div.innerHTML += `<pre class="format-difference">${entry[k]}</pre>`
-                }
-            }
-        }
-    }
+    resultGeneral.innerHTML = generateHTML(testDetails, generalEntries, selectedRun, selectedRun2);
+    resultIndex.innerHTML = generateHTML(testDetails, indexEntries, selectedRun, selectedRun2);
+    resultResults.innerHTML = generateHTML(testDetails, resultsEntries, selectedRun, selectedRun2);
+    resultQuery.innerHTML = generateHTML(testDetails, queryEntries, selectedRun, selectedRun2);
 }
 
-function generateHTML(entries) {
+function generateHTML(testDetails, entries, selectedRun, selectedRun2) {
+    if (selectedRun2 == -1) {
+        return generateEntry(testDetails, entries, false);
+    }
+    var html = "<table><thead><th>" + selectedRun + "</th><th>" + selectedRun2 + "</thead>";
+    html += "<td>" + generateEntry(testDetails, entries, false) + "</td>";
+    html += "<td>" + generateEntry(testDetails, entries, true) + "</td>";
+    return html += '</table>';
+}
+
+function generateEntry(testDetails, entries, secondRun) {
     var html = '<div class="topic-wrapper">';
     entries.forEach(entry => {
-        //if (entry.value != "") {
-            html += `
-            <p class="heading"><strong>${entry.label}:</strong></p>
-            <div class="results-wrapper" id="${entry.key}"><pre>${entry.value}</pre></div>
-        `;
-        console.log(entry.key)
-        console.log(entry.value)
-       // }
+        html += `<p class="heading"><strong>${entry.label}:</strong></p>`
+        if (secondRun && testDetails.hasOwnProperty(`${entry.key}-run2`)) {
+            html += `<div class="results-wrapper" id="${entry.key}"><pre>${testDetails[`${entry.key}-run2`]}</pre></div>`;
+        } else {
+        html += `<div class="results-wrapper" id="${entry.key}"><pre>${entry.value}</pre></div>`;
+        }
     });
     return html += '</div>';
 }
 
 function compare(dict1, dict2) {
     let result = {};
-    for (let testName in dict2) {
-        if (testName === "info") {
-            continue;
-        }
-        for (let key in dict2[testName]) {
-            if (key.toLowerCase().includes("log")) {
-                continue;
+    for (let key in dict1) {
+        if (key === "info") continue
+        if (dict1[key]["status"] != dict2[key]["status"] || dict1[key]["errorType"] != dict2[key]["errorType"]){
+            result[key] = dict1[key]
+            for (let subKey in dict2[key]){
+                result[key][subKey + "-run2"] = dict2[key][subKey]
             }
-            if (dict1[testName][key] !== dict2[testName][key]) {
-                if (!result[testName]) {
-                    result[testName] = {...dict1[testName]};
-                }
-                result[testName][key + "-diff"] = dict2[testName][key];
-            }
-        }
-        if (result[testName]) {
-            result[testName]["queryLog-diff"] = dict2[testName]["queryLog"];
-            result[testName]["indexLog-diff"] = dict2[testName]["indexLog"];
         }
     }
     return result;

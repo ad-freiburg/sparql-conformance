@@ -56,7 +56,7 @@ table td {
 
 .top-heading {
     border: 1px solid #CFCFCF;
-    width: 98em;
+    width: 108em;
     padding: 1em 1em 0.6em;
     margin: 0.5em auto 0.5em;
 }
@@ -69,7 +69,7 @@ table td {
 
 .outer-wrapper {
     border: 1px solid #CFCFCF;
-    width: 98em;
+    width: 108em;
     padding: 1em 1em 0.6em;
     margin: 0.5em auto 0.5em;
     max-height: fit-content;

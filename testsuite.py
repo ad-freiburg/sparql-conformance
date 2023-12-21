@@ -1006,7 +1006,7 @@ class TestSuite:
             test_name = test[2]
             if failed:
                 self.update_test_status(test_name, "Failed", error_type)
-            self.test_data[test_name].update({"indexLog": index_log, "serverLog": server_log})
+            self.test_data[test_name].update({"indexLog": self.remove_date_time_parts(index_log), "serverLog": server_log})
 
     def start_graph_server(self, graph):
         """
