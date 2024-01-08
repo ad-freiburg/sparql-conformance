@@ -1,103 +1,85 @@
 $(document).ready(async function () {
     var jsonData = await fetch("RESULTS.json").then(response => response.json());
     var selectedRun = Object.keys(jsonData)[0];
+    $(`#table-select-runs1 tr[data-name=${selectedRun}]`).addClass("row-selected");
     var selectedRun2 = -1;
     var jsonArray = getTestRun(selectedRun, selectedRun2, jsonData);
     var currentArray = jsonArray;
     var currentTestName = -1;
+    buildRunTables(jsonData);
     buildTable(currentArray, currentTestName);
-    buildRunTable(jsonData);
+    showCorrectElement(currentTestName, selectedRun2)
 
-    $("#"+selectedRun).addClass("row-selected");
-    $("#result-wrapper-general").hide();
-    $("#result-wrapper-server").hide();
-    $("#result-wrapper-index").hide();
-    $("#result-wrapper-query").hide();
-
-    $("#test-table").on("click", "th", function(){
-        var column = $(this).data("column");
-        var order = $(this).data("order");
-        if(order == "desc"){
-            $(this).data("order", "asc");
-            currentArray = currentArray.sort((a,b) => a[column] > b[column] ? 1 : -1);
-        }else{
-            $(this).data("order", "desc")
-            currentArray = currentArray.sort((a,b) => a[column] < b[column] ? 1 : -1);
-        }
-        buildTable(currentArray, currentTestName);
+    $(document).on('click', '.button-toggle', function() {
+        console.log("Button clicked: " + this.id)
+        $(`#div-${this.id}`).toggleClass("visually-hidden");
     });
 
-    $("#test-table").on("click", "tr", function() {
+    $("#button-overview").on("click", function() {
+        console.log("Button overview clicked: " + this.id)
+        if (selectedRun2 == -1) {
+            $("#container-test-details").addClass("visually-hidden");
+            $("#container-test-overview").removeClass("visually-hidden");
+        } else {
+            $("#container-test-details-1").addClass("visually-hidden");
+            $("#container-test-overview-1").removeClass("visually-hidden");
+            $("#container-test-details-2").addClass("visually-hidden");
+            $("#container-test-overview-2").removeClass("visually-hidden");
+        }
+    });
+
+    $("#button-details").on("click", function() {
+        console.log("Button details clicked: " + this.id)
+        if (selectedRun2 == -1) {
+            $("#container-test-details").removeClass("visually-hidden");
+            $("#container-test-overview").addClass("visually-hidden");
+        } else {
+            $("#container-test-details-1").removeClass("visually-hidden");
+            $("#container-test-overview-1").addClass("visually-hidden");
+            $("#container-test-details-2").removeClass("visually-hidden");
+            $("#container-test-overview-2").addClass("visually-hidden");
+        }
+    });
+
+    $("#table-select-tests").on("click", "tr", function() {
         var testName = $(this).data("name");
         if (testName != currentTestName) {
-            $("#test-table tr").removeClass("row-selected");
+            $("#table-select-tests tr").removeClass("row-selected");
             $(this).addClass("row-selected");
             buildTestInformation(testName, jsonArray, selectedRun, selectedRun2);
         }
         currentTestName = testName;
+        showCorrectElement(currentTestName, selectedRun2)
     });
 
-    $("#select-run-table").on("click", "tr", async function() {
+    $("#table-select-runs1").on("click", "tr", function() {
         var runName = $(this).data("name");
-        if (runName == selectedRun) {
-            $(this).removeClass("row-selected");
-            selectedRun = selectedRun2;
-            selectedRun2 = -1
-        } else if (runName == selectedRun2) {
-            $(this).removeClass("row-selected");
-            selectedRun2 = -1;
-        } else if (selectedRun == -1) {
-            selectedRun = runName;
-            $(this).addClass("row-selected");
-        } else if (selectedRun2 == -1) {
-            selectedRun2 = runName;
-            $(this).addClass("row-selected");
-        } else {
-            return;
-        }
-        $("button").removeClass("button-pressed");
-        $("#result-wrapper-general").hide();
-        $("#result-wrapper-server").hide();
-        $("#result-wrapper-index").hide();
-        $("#result-wrapper-query").hide();
+        $(`#table-select-runs1 tr[data-name=${selectedRun}]`).removeClass("row-selected");
+        $(`#table-select-runs1 tr[data-name=${runName}]`).addClass("row-selected");
+        selectedRun = runName;
         jsonArray = getTestRun(selectedRun, selectedRun2, jsonData);
-        currentArray = jsonArray
-        currentTestName = -1
+        currentArray = jsonArray;
+        currentTestName = -1;
         buildTable(currentArray, currentTestName);
+        showCorrectElement(currentTestName, selectedRun2)
     });
-    
-    $("button").on("click", function() {
-        $("button").removeClass("button-pressed");
-        $(this).addClass("button-pressed");
-        $("#result-wrapper-general").hide();
-        $("#result-wrapper-server").hide();
-        $("#result-wrapper-index").hide();
-        $("#result-wrapper-query").hide();
-        buttonId = $(this).attr("id");
-        switch (buttonId) {
-            case "general":
-                $("#result-wrapper-general").show();
-                break;
-            case "server":
-                $("#result-wrapper-server").show();
-                break;
-            case "index":
-                $("#result-wrapper-index").show();
-                break;
-            case "query":
-                $("#result-wrapper-query").show();
-                break;
-            default:
-                break;
+
+    $("#table-select-runs2").on("click", "tr", function() {
+        $(`#table-select-runs2 tr[data-name=${selectedRun2}]`).removeClass("row-selected");
+        var runName = $(this).data("name");
+        if (runName == selectedRun2){
+            selectedRun2 = -1;
+        } else {
+            selectedRun2 = runName;
+            $(`#table-select-runs2 tr[data-name=${runName}]`).addClass("row-selected");
         }
-    });
-    
-    $("#search-input").on("keyup", function(){
-        var value = $(this).val();
-        var mode = $("#search-mode").val();
-        currentArray = searchTable(value, mode, jsonArray);
+        jsonArray = getTestRun(selectedRun, selectedRun2, jsonData);
+        currentArray = jsonArray;
+        currentTestName = -1;
         buildTable(currentArray, currentTestName);
+        showCorrectElement(currentTestName, selectedRun2)
     });
+
 });
 
 function getTestRun(run1, run2, jsonData) {
@@ -127,68 +109,41 @@ function convertObjectToArray(jsonData) {
     return jsonArray;
 }
 
-function searchTable(value, mode, jsonArray){
-    var newArray = [];
-
-    for (var i = 0; i < jsonArray.length; i++){
-        value = value.toLowerCase();
-        var search;
-        switch (mode) {
-            case "name":
-                search = jsonArray[i].name.toLowerCase();
-                break;
-            case "errorType":
-                search = jsonArray[i].errorType.toLowerCase();
-                break;
-            case "typeName":
-                search = jsonArray[i].typeName.toLowerCase();
-                break;
-            case "status":
-                search = jsonArray[i].status.toLowerCase();
-                break;
-            default:
-                search = "name"; 
-        }
-        if (search.includes(value)){
-            newArray.push(jsonArray[i]);
-        }
-    }
-    return newArray;
-}
-
-function buildRunTable(jsonData){
-    var tableBody = document.getElementById("table-body-runs");
+function buildRunTables(jsonData){
+    var tableBodies = document.getElementsByClassName("table-body-runs");
     const keys = Object.keys(jsonData);
     for (var i in keys) {
         var info = jsonData[keys[i]].info;
-        var row = document.createElement("tr");
-        row.setAttribute("data-name", keys[i]);
-        row.setAttribute("id", keys[i]);
-        var testNameCell = document.createElement("td");
-        testNameCell.textContent = keys[i];
-        row.appendChild(testNameCell);
-        var testTestsCell = document.createElement("td");
-        testTestsCell.textContent = info.tests;
-        row.appendChild(testTestsCell);
-        var testPassedCell = document.createElement("td");
-        testPassedCell.textContent = info.passed;
-        row.appendChild(testPassedCell);
-        var testPassedFailedCell = document.createElement("td");
-        testPassedFailedCell.textContent = info.passedFailed;
-        row.appendChild(testPassedFailedCell);
-        var testFailedCell = document.createElement("td");
-        testFailedCell.textContent = info.failed;
-        row.appendChild(testFailedCell);
-        var testNotTestedCell = document.createElement("td");
-        testNotTestedCell.textContent = info.notTested;
-        row.appendChild(testNotTestedCell);
 
-        tableBody.appendChild(row);
+        function createRow() {
+            var row = document.createElement("tr");
+            row.setAttribute("data-name", keys[i]);
+            row.setAttribute("id", keys[i] + "-" + Math.random().toString(36).slice(2, 11));
+            var cell = document.createElement("td");
+            var divRow = document.createElement("div");
+            divRow.classList.add("row");
+            var name = document.createElement("div");
+            name.classList.add("col");
+            name.innerHTML = keys[i];
+            divRow.appendChild(name);
+            var count = document.createElement("div");
+            count.classList.add("col-md-auto");
+            count.innerHTML += `${info.tests}-<label class="tests-passed">${info.passed}</label>`;
+            count.innerHTML += `-<label class="tests-passedFailed">${info.passedFailed}</label>`;
+            count.innerHTML += `-<label class="tests-failed">${info.failed}</label>`;
+            count.innerHTML += `-<label class="tests-notTested">${info.notTested}</label>`;
+            divRow.appendChild(count);
+            cell.appendChild(divRow)
+            row.appendChild(cell);
+            return row;
+        }
+        tableBodies[0].appendChild(createRow());
+        tableBodies[1].appendChild(createRow());
     }
 }
 
 function buildTable(jsonArray, currentTestName){
-    var tableBody = document.getElementById("table-body");
+    var tableBody = document.getElementById("table-body-tests");
     tableBody.innerHTML = "";
     for (var testNumber in jsonArray) {
         var test = jsonArray[testNumber];
@@ -225,77 +180,67 @@ function buildTable(jsonArray, currentTestName){
 
 function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2){
     var testDetails = jsonArray.find((test) => test.name === testName);
-    var testDetails = jsonArray.find((test) => test.name === testName);
-    if (typeof testDetails === "undefined")
-        return;
-    var resultGeneral = document.getElementById("result-wrapper-general");
-    var resultIndex = document.getElementById("result-wrapper-index");
-    var resultResults = document.getElementById("result-wrapper-server");
-    var resultQuery = document.getElementById("result-wrapper-query");
-
-    var generalEntries = [
-        { label: "Test Name", value: testDetails.name, key: "name" },
-        { label: "Test Status", value: testDetails.status, key: "status" },
-        { label: "Error Type", value: testDetails.errorType, key: "errorType" },
+    var overviewEntries = [
+        { label: "Test Name", value: testDetails.name, key: "name", line: "True" },
+        { label: "Test Status", value: testDetails.status, key: "status", line: "True" },
+        { label: "Error Type", value: testDetails.errorType, key: "errorType", line: "False" },
     ];
     if (testDetails.errorType == "RESULTS NOT THE SAME" || testDetails.errorType == "Known, intended bevaviour that does not comply with SPARQL standard") {
-        generalEntries.push({ label: "Expected Query Result", value: testDetails.expectedHtml, key: "expectedHtml" });
-        generalEntries.push({ label: "Query Result", value: testDetails.gotHtml, key: "gotHtml" });
+        overviewEntries.push({ label: "Expected Query Result", value: testDetails.expectedHtml, key: "expectedHtml", line: "False" });
+        overviewEntries.push({ label: "Query Result", value: testDetails.gotHtml, key: "gotHtml", line: "False" });
     }
     if (testDetails.errorType == "QUERY EXCEPTION") {
-        generalEntries.push({ label: "Query File", value: testDetails.queryFile, key: "queryFile" });
-        generalEntries.push({ label: "Query Log", value: testDetails.queryLog, key: "queryLog"  });
+        overviewEntries.push({ label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False" });
+        overviewEntries.push({ label: "Query Log", value: testDetails.queryLog, key: "queryLog", line: "False"  });
     }
-    //{ label: "Test Type", value: testDetails.Type, key: "Type" },
-    //{ label: "Test Feature", value: testDetails.Feature, key: "Feature" },
-    const indexEntries = [
-        { label: "Index Filename", value: testDetails.graph, key: "graph" },
-        { label: "Index File", value: testDetails.graphFile, key: "graphFile" },
-        { label: "Index Build Log", value: testDetails.indexLog, key: "indexLog" }
+
+    var allEntries = [
+        { label: "Test Type", value: testDetails.Type, key: "Type", line: "True" },
+        { label: "Test Feature", value: testDetails.Feature, key: "Feature", line: "True" },
+        { label: "Query Filename", value: testDetails.query, key: "query", line: "True"  },
+        { label: "Index Filename", value: testDetails.graph, key: "graph", line: "True" },
+        { label: "Index File", value: testDetails.graphFile, key: "graphFile", line: "False"  },
+        { label: "Index Build Log", value: testDetails.indexLog, key: "indexLog", line: "False"  },
+        { label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False"  },
+        { label: "Query Sent", value: testDetails.querySent, key: "querySent", line: "False"  },
+        { label: "Query Log", value: testDetails.queryLog, key: "queryLog", line: "False"  },
+        { label: "Result Filename", value: testDetails.result, key: "result", line: "True"  },
+        { label: "Result File", value: testDetails.resultFile.replace(/</g, "&lt;").replace(/>/g, "&gt;"), key: "resultFile", line: "False" },
+        { label: "Expected Query Result", value: testDetails.expectedHtml, key: "expectedHtml", line: "False" },
+        { label: "Query Result", value: testDetails.gotHtml, key: "gotHtml", line: "False" }
     ];
 
-    const resultsEntries = [
-        { label: "Expected Query Result", value: testDetails.expectedHtml, key: "expectedHtml" },
-        { label: "Query Result", value: testDetails.gotHtml, key: "gotHtml" },
-        { label: "Expected result after comparing", value: testDetails.expectedDif, key: "expectedDif" },
-        { label: "Query result after comparing", value: testDetails.resultDif, key: "resultDif" }
-    ];
-    const queryEntries = [
-        { label: "Query Filename", value: testDetails.query, key: "query"  },
-        { label: "Query File", value: testDetails.queryFile, key: "queryFile"  },
-        { label: "Result Filename", value: testDetails.result, key: "result"  },
-        { label: "Result File", value: testDetails.resultFile.replace(/</g, "&lt;").replace(/>/g, "&gt;"), key: "resultFile" },
-        { label: "Query Sent", value: testDetails.querySent, key: "querySent"  },
-        { label: "Query Log", value: testDetails.queryLog, key: "queryLog"  },
-    ];
+    if (selectedRun2 == -1){
+        buildHTML(overviewEntries, "container-test-overview");
+        buildHTML(allEntries, "container-test-details");
+    } else {
+        buildHTML(overviewEntries, "container-test-overview-1");
+        buildHTML(allEntries, "container-test-details-1");
 
-    resultGeneral.innerHTML = generateHTML(testDetails, generalEntries, selectedRun, selectedRun2);
-    resultIndex.innerHTML = generateHTML(testDetails, indexEntries, selectedRun, selectedRun2);
-    resultResults.innerHTML = generateHTML(testDetails, resultsEntries, selectedRun, selectedRun2);
-    resultQuery.innerHTML = generateHTML(testDetails, queryEntries, selectedRun, selectedRun2);
+        overviewEntries = replaceEntries(overviewEntries, testDetails);
+        allEntries = replaceEntries(allEntries, testDetails)         
+        buildHTML(overviewEntries, "container-test-overview-2");
+        buildHTML(allEntries, "container-test-details-2");
+    }
 }
 
-function generateHTML(testDetails, entries, selectedRun, selectedRun2) {
-    if (selectedRun2 == -1) {
-        return generateEntry(testDetails, entries, false);
-    }
-    var html = "<table><thead><th>" + selectedRun + "</th><th>" + selectedRun2 + "</thead>";
-    html += "<td>" + generateEntry(testDetails, entries, false) + "</td>";
-    html += "<td>" + generateEntry(testDetails, entries, true) + "</td>";
-    return html += '</table>';
+function replaceEntries(entries, testDetails){
+    entries.forEach(function(entry) {
+        entry.value = testDetails[entry.key + "-run2"];
+    });
+    return entries;
 }
 
-function generateEntry(testDetails, entries, secondRun) {
-    var html = '<div class="topic-wrapper">';
+function buildHTML(entries, id){
+    var element = document.getElementById(id);
+    element.innerHTML = ""
     entries.forEach(entry => {
-        html += `<p class="heading"><strong>${entry.label}:</strong></p>`
-        if (secondRun && testDetails.hasOwnProperty(`${entry.key}-run2`)) {
-            html += `<div class="results-wrapper" id="${entry.key}"><pre>${testDetails[`${entry.key}-run2`]}</pre></div>`;
+        if (entry.line == "True"){
+            element.innerHTML += createSingleLineElement(entry.label, entry.value)
         } else {
-        html += `<div class="results-wrapper" id="${entry.key}"><pre>${entry.value}</pre></div>`;
+            element.innerHTML += createElement(entry.label, entry.value)
         }
     });
-    return html += '</div>';
 }
 
 function compare(dict1, dict2) {
@@ -310,4 +255,38 @@ function compare(dict1, dict2) {
         }
     }
     return result;
+}
+
+function showCorrectElement(currentTestName, selectedRun2){
+    $("#nothing").addClass("visually-hidden");
+    $("#button-changeInfo").addClass("visually-hidden");
+    $("#compare").addClass("visually-hidden");
+    $("#single").addClass("visually-hidden");
+    if (currentTestName == -1) {
+        $("#nothing").removeClass("visually-hidden");
+    } else {
+        $("#button-changeInfo").removeClass("visually-hidden");
+        if (selectedRun2 == -1) {
+            $("#single").removeClass("visually-hidden");
+        } else {
+            $("#compare").removeClass("visually-hidden");
+        }
+    }
+}
+
+function createSingleLineElement(heading, text){
+    var html = '<div class="row container-info">';
+        html += `<div class="col heading"><strong>${heading}:</strong></div>`
+        html += `<div class="col results-wrapper""><pre>${text}</pre></div>`;
+    return html += '</div>';
+}
+
+function createElement(heading, text){
+    var id = Math.random().toString(36).slice(2, 11);
+    var html = `<div class="row container-info">`;
+        html += `<div class="col heading"><strong>${heading}:</strong></div>`;
+        html += `<div class="col button"><div class="button-show" class="btn-group" role="group" aria-label="Basic example">`;
+        html += `<button id="${id}" type="button" class="button-toggle btn btn-primary">Show/Hide</button></div></div>`;
+        html += `<div class="row"><div id="div-${id}" class="col results-wrapper visually-hidden"><pre>${text}</pre></div></div>`;
+    return html;
 }
