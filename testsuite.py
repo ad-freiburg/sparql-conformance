@@ -321,10 +321,10 @@ class TestSuite:
             content_type = "application/sparql-results+xml"
 
         url = "http://mint-work:7001"
-        headers = {"Accept": content_type, "Content-type": "application/sparql-query"}
+        headers = {"Accept": content_type, "Content-type": "application/sparql-query; charset=utf-8"}
 
         try:
-            response = requests.post(url, headers=headers, data=query)
+            response = requests.post(url, headers=headers, data=query.encode("utf-8"))
             return (response.status_code, response.text)
         except requests.exceptions.RequestException as e:
             return (500, f"Query execution error: {str(e)}")
@@ -409,7 +409,8 @@ class TestSuite:
             if (self.alias.get(element1.tag) != element2.tag and self.alias.get(element2.tag) != element1.tag) or not compare_with_intended_behaviour: return False
         if element1.attrib != element2.attrib: 
             if not isinstance(element1.attrib, dict) and not isinstance(element2.attrib, dict) and (self.alias.get(element1.attrib) != element2.attrib and self.alias.get(element2.attrib) != element1.attrib) or not compare_with_intended_behaviour: return False
-        if element1.attrib.get("datatype") in number_types or element2.attrib.get("datatype") in number_types:
+        if (element1.attrib.get("datatype") in number_types) != (element2.attrib.get("datatype") in number_types): return False
+        if element1.attrib.get("datatype") in number_types and element2.attrib.get("datatype") in number_types:
             is_number = True
         if element1.text != element2.text:
             if (element1.text is None and element2.text.strip() == "") or (element2.text is None and element1.text.strip() == ""):
