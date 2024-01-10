@@ -1134,12 +1134,9 @@ class TestSuite:
         """
         Generates a JSON file with the test results.
         """
-        file_path = "./www/RESULTS.json"
-        if os.path.exists(file_path):
-            with open(file_path, "r") as file:
-                data = json.load(file)
-        else:
-            data = {}
+        os.makedirs("./results", exist_ok=True)
+        file_path = f"./results/{self.name}.json"
+        data = {}
         data[self.name] = self.test_data
         data[self.name]["info"] = {"name": "info",
                                    "passed": self.passed,

@@ -1,5 +1,7 @@
+
 $(document).ready(async function () {
-    var jsonData = await fetch("RESULTS.json").then(response => response.json());
+    var jsonData = await fetchData();
+    console.log(jsonData)
     var selectedRun = Object.keys(jsonData)[0];
     $(`#table-select-runs1 tr[data-name=${selectedRun}]`).addClass("row-selected");
     var selectedRun2 = -1;
@@ -11,12 +13,10 @@ $(document).ready(async function () {
     showCorrectElement(currentTestName, selectedRun2)
 
     $(document).on('click', '.button-toggle', function() {
-        console.log("Button clicked: " + this.id)
         $(`#div-${this.id}`).toggleClass("visually-hidden");
     });
 
     $("#button-overview").on("click", function() {
-        console.log("Button overview clicked: " + this.id)
         if (selectedRun2 == -1) {
             $("#container-test-details").addClass("visually-hidden");
             $("#container-test-overview").removeClass("visually-hidden");
@@ -29,7 +29,6 @@ $(document).ready(async function () {
     });
 
     $("#button-details").on("click", function() {
-        console.log("Button details clicked: " + this.id)
         if (selectedRun2 == -1) {
             $("#container-test-details").removeClass("visually-hidden");
             $("#container-test-overview").addClass("visually-hidden");
@@ -81,8 +80,32 @@ $(document).ready(async function () {
     });
 
 });
+async function fetchData() {
+    var jsonData = {};
+    var runs = [];
+    var resultsPath = window.location.pathname.replace(/www\/.*/, "results/");
+
+    let data = await fetch(resultsPath).then(response => response.text());
+
+    let fileFetchPromises = $(data).find("a").map(function() {
+        var file = $(this).attr("href");
+        runs.push(file);
+        return fetch(`/results/${file}`).then(response => response.json());
+    }).get();
+
+    let fileDataArray = await Promise.all(fileFetchPromises);
+    fileDataArray.forEach((fileData, index) => {
+        var name = runs[index].replace(".json", "");
+        jsonData[name] = fileData[name];
+    });
+
+    return jsonData;
+}
 
 function getTestRun(run1, run2, jsonData) {
+    console.log(run1)
+    console.log(run2)
+    console.log(jsonData)
     var result = {};
     if (run1 == -1 || run2 == -1) {
         if (run1 != -1) {
