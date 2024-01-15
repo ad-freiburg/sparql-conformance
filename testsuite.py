@@ -16,19 +16,19 @@ class TestSuite:
     A class to represent a test suite for SPARQL using QLever.
 
     Attributes:
-        #TODO: Make path changeable, maybe in config?
-        DEFAULT_TEST_SUITE_PATH (str): Default path to the test suite files provided by SPARQL.
         name (str): Name of the current run.
         path_to_binaries (str): Path to QLever binaries.
+        alias (dict): QLever specific datatypes ex. int = integer. Read from config.
+        map_bnodes (dict): Dict to check if blank nodes are correct for every test.
+        number_types (list): List with all types that are considered numbers. Read from config.
         test_data (dict): Dictionary to store/log all the test data.
+        tests_of_graph (dict): Dictionary grouping all tests using the same graph.
         tests (int): Total number of tests.
         passed (int): Number of passed tests.
         failed (int): Number of failed tests.
         passed_failed ( int): Number of tests that passed after using alias dict.
-        alias (dict): QLever specific datatypes ex. int = integer. Read from config.
-        tests_of_graph (dict): Dictionary grouping all tests using the same graph.
+        self.path_to_test_suite (str): Path to the SPARQL Testsuite directory. Read from config.
     """
-    DEFAULT_TEST_SUITE_PATH = "./TestSuite/sparql11-test-suite/"
 
     def __init__(self, path: str, name: str):
         """
@@ -41,13 +41,15 @@ class TestSuite:
         self.name = name
         self.path_to_binaries = path
         self.alias = {}
+        self.map_bnodes = {}
+        self.number_types = []
         self.test_data = {}
         self.tests_of_graph = {}
         self.tests = 0
         self.passed = 0
         self.failed = 0
         self.passed_failed = 0
-        self.path_to_test_suite = TestSuite.DEFAULT_TEST_SUITE_PATH
+        self.path_to_test_suite = ""
 
     def initialize_tests(self, file: str):
         """
@@ -78,7 +80,24 @@ class TestSuite:
         if not os.path.exists(path_to_config):
             print(f"{path_to_config} does not exist!")
             print(f"Create basic {path_to_config}")
-            config = {"alias": {}}
+            config = {
+                    "path_to_testsuite": "./testsuite/",
+                    "alias": {            
+                            "http://www.w3.org/2001/XMLSchema#integer": "http://www.w3.org/2001/XMLSchema#int",
+                            "http://www.w3.org/2001/XMLSchema#double": "http://www.w3.org/2001/XMLSchema#decimal",
+                            "http://www.w3.org/2001/XMLSchema#int": "http://www.w3.org/2001/XMLSchema#integer",
+                            "http://www.w3.org/2001/XMLSchema#decimal": "http://www.w3.org/2001/XMLSchema#double",
+                            "http://www.w3.org/2001/XMLSchema#string": None
+                            },
+                    "number_types": [
+                                    "http://www.w3.org/2001/XMLSchema#integer",
+                                    "http://www.w3.org/2001/XMLSchema#double",
+                                    "http://www.w3.org/2001/XMLSchema#decimal",
+                                    "http://www.w3.org/2001/XMLSchema#float",
+                                    "http://www.w3.org/2001/XMLSchema#int",
+                                    "http://www.w3.org/2001/XMLSchema#decimal"
+                                    ]
+                      }
             with open(path_to_config, "w") as file:
                     json.dump(config, file, indent=4)
             return
@@ -86,6 +105,8 @@ class TestSuite:
         with open(path_to_config, "r") as file:
             config = json.load(file)
             self.alias = config["alias"]
+            self.number_types = config["number_types"]
+            self.path_to_test_suite = config["path_to_testsuite"]
 
     def process_row(self, row: list):
         """
@@ -325,11 +346,33 @@ class TestSuite:
 
         try:
             response = requests.post(url, headers=headers, data=query.encode("utf-8"))
+            print(response.text)
             return (response.status_code, response.text)
         except requests.exceptions.RequestException as e:
             return (500, f"Query execution error: {str(e)}")
 
-    def generate_highlighted_string_xml(self, original_xml: str, remaining_tree: ET.ElementTree) -> str:
+    def element_to_string(self, element: ET.Element, escaped_xml: str, label: str):
+        """
+        This function takes an element turns in into a string and if the string is part of the escaped_xml string it will be enclosed with a HTML label
+
+        Parameters:
+            original_xml (str): The original XML string to be processed.
+            remaining_tree (ET.ElementTree): An ElementTree object representing the XML elements to be highlighted.
+            red_tree: ET.ElementTree (ET.ElementTree): An ElemenTree object representing the XML elements to RED otherwise yellow.
+
+        Returns:
+            str: An HTML-escaped XML string with specific elements highlighted.
+        """      
+        element_str = ET.tostring(element).decode("utf8").replace(" />", "/>")
+        element_str = element_str.replace("ns0:", "")
+
+        escaped_element_str = escape(element_str)
+        if escaped_element_str in escaped_xml:
+            return escaped_xml.replace(escaped_element_str, f"<label class='{label}'>{escaped_element_str}</label>")
+        else:
+            return escaped_xml
+
+    def generate_highlighted_string_xml(self, original_xml: str, remaining_tree: ET.ElementTree, red_tree: ET.ElementTree) -> str:
         """
         This method takes an XML string and an ElementTree object representing a subset of the XML. 
         It escapes the XML string for HTML display and then highlights the elements from the 
@@ -339,19 +382,24 @@ class TestSuite:
         Parameters:
             original_xml (str): The original XML string to be processed.
             remaining_tree (ET.ElementTree): An ElementTree object representing the XML elements to be highlighted.
+            red_tree: ET.ElementTree (ET.ElementTree): An ElemenTree object representing the XML elements to RED otherwise yellow.
 
         Returns:
             str: An HTML-escaped XML string with specific elements highlighted.
         """
         escaped_xml = escape(original_xml)
 
-        for element in remaining_tree.iter():
-            element_str = ET.tostring(element).decode("utf8").replace(" />", "/>")
-            element_str = element_str.replace("ns0:", "")
+        for element in remaining_tree.getroot().findall('.//head'):
+            escaped_xml = self.element_to_string(element, escaped_xml, "red")
 
-            escaped_element_str = escape(element_str)
-            if escaped_element_str in escaped_xml:
-                escaped_xml = escaped_xml.replace(escaped_element_str, f"<label class='red'>{escaped_element_str}</label>")
+        for element in remaining_tree.getroot().findall('.//result'):
+            label = "yellow"
+            for elem in red_tree.getroot().findall('.//result'):
+                if (elem.tag == element.tag and 
+                    elem.attrib == element.attrib and 
+                    elem.text == element.text):
+                    label = "red"
+            escaped_xml = self.element_to_string(element, escaped_xml, label)
 
         return escaped_xml
 
@@ -369,7 +417,7 @@ class TestSuite:
             elem.tag = elem.tag.partition("}")[-1]
         return tree
 
-    def generate_html_for_xml(self, xml1: str, xml2: str, remaining_tree1: ET.ElementTree, remaining_tree2: ET.ElementTree) -> tuple:
+    def generate_html_for_xml(self, xml1: str, xml2: str, remaining_tree1: ET.ElementTree, remaining_tree2: ET.ElementTree, red_tree1: ET.ElementTree, red_tree2: ET.ElementTree) -> tuple:
         """
         Generates HTML representations for two XML strings with specific elements highlighted.
 
@@ -382,8 +430,8 @@ class TestSuite:
         Returns:
             tuple: A tuple containing two HTML-escaped and highlighted XML strings.
         """
-        highlighted_xml1 = f"<pre>{self.generate_highlighted_string_xml(xml1, self.strip_namespace(remaining_tree1))}</pre>"
-        highlighted_xml2 = f"<pre>{self.generate_highlighted_string_xml(xml2, self.strip_namespace(remaining_tree2))}</pre>"
+        highlighted_xml1 = f"{self.generate_highlighted_string_xml(xml1, self.strip_namespace(remaining_tree1), self.strip_namespace(red_tree1))}"
+        highlighted_xml2 = f"{self.generate_highlighted_string_xml(xml2, self.strip_namespace(remaining_tree2), self.strip_namespace(red_tree2))}"
 
         return highlighted_xml1, highlighted_xml2
 
@@ -398,21 +446,30 @@ class TestSuite:
         Returns:
             bool: True if elements are considered equal and if not False.
         """
-        number_types = [
-        "http://www.w3.org/2001/XMLSchema#integer",
-        "http://www.w3.org/2001/XMLSchema#double",
-        "http://www.w3.org/2001/XMLSchema#decimal",
-        "http://www.w3.org/2001/XMLSchema#float"
-        ]
         is_number = False
-        if element1.tag != element2.tag: 
-            if (self.alias.get(element1.tag) != element2.tag and self.alias.get(element2.tag) != element1.tag) or not compare_with_intended_behaviour: return False
+        if element1.tag != element2.tag:
+            if (self.alias.get(element1.tag) != element2.tag and self.alias.get(element2.tag) != element1.tag) or not compare_with_intended_behaviour: 
+                return False
+
         if element1.attrib != element2.attrib: 
-            if not isinstance(element1.attrib, dict) and not isinstance(element2.attrib, dict) and (self.alias.get(element1.attrib) != element2.attrib and self.alias.get(element2.attrib) != element1.attrib) or not compare_with_intended_behaviour: return False
-        if (element1.attrib.get("datatype") in number_types) != (element2.attrib.get("datatype") in number_types): return False
-        if element1.attrib.get("datatype") in number_types and element2.attrib.get("datatype") in number_types:
+            if isinstance(element1.attrib, dict) != isinstance(element2.attrib, dict): return False
+            if not isinstance(element1.attrib, dict) and (self.alias.get(element1.attrib) != element2.attrib and self.alias.get(element2.attrib) != element1.attrib) or not compare_with_intended_behaviour: return False
+            if isinstance(element1.attrib, dict) and (self.alias.get(element1.attrib.get("datatype")) != element2.get("datatype") and self.alias.get(element2.attrib.get("datatype")) != element1.attrib.get("datatype")) or not compare_with_intended_behaviour: return False
+        
+        if (element1.attrib.get("datatype") in self.number_types) != (element2.attrib.get("datatype") in self.number_types): return False
+
+        if element1.attrib.get("datatype") in self.number_types and element2.attrib.get("datatype") in self.number_types:
             is_number = True
+    
         if element1.text != element2.text:
+            if element1.tag == "{http://www.w3.org/2005/sparql-results#}bnode":
+                if element1.text not in self.map_bnodes and element2.text not in self.map_bnodes:
+                    self.map_bnodes[element1.text] = element2.text
+                    self.map_bnodes[element2.text] = element1.text
+                    return all(self.xml_elements_equal(c1, c2, compare_with_intended_behaviour) for c1, c2 in zip(element1, element2))
+                elif self.map_bnodes.get(element1.text) == element2.text and self.map_bnodes.get(element2.text) == element1.text:
+                    return all(self.xml_elements_equal(c1, c2, compare_with_intended_behaviour) for c1, c2 in zip(element1, element2))
+                return False
             if (element1.text is None and element2.text.strip() == "") or (element2.text is None and element1.text.strip() == ""):
                 return all(self.xml_elements_equal(c1, c2, compare_with_intended_behaviour) for c1, c2 in zip(element1, element2))
             if element1.text is None or element2.text is None:  return False
@@ -456,6 +513,7 @@ class TestSuite:
         Returns:
             tuple: A tuple containing the status and error type.
         """
+        self.map_bnodes = {}
         status = "Failed"
         error_type = "RESULTS NOT THE SAME"
         expected_tree = ET.ElementTree(ET.fromstring(expected_xml))
@@ -473,14 +531,16 @@ class TestSuite:
         
         if results1 is not None and results2 is not None:
             self.xml_remove_equal_elements(results1, results2, False)
-            expected_string, query_string = self.generate_html_for_xml(expected_xml, query_xml, expected_tree, query_tree)
-            test_name = test[2]
-            self.test_data[test_name].update({"expectedHtml": expected_string, "gotHtml": query_string})
-        
-        if len(list(head1)) != 0 or len(list(head2)) != 0:
-            return status, error_type
 
-        if len(list(results1)) == 0 and len(list(results1)) == 0:
+        # Copy expected_tree
+        expected_tree_string = ET.tostring(expected_tree.getroot())
+        copied_expected_tree = ET.ElementTree(ET.fromstring(expected_tree_string))
+
+        # Copy query_tree
+        query_tree_string = ET.tostring(query_tree.getroot())
+        copied_query_tree = ET.ElementTree(ET.fromstring(query_tree_string))
+
+        if len(list(results1)) == 0 and len(list(results1)) == 0 and len(list(head1)) == 0 and len(list(head2)):
             status = "Passed"
             error_type = ""
         else:
@@ -490,10 +550,14 @@ class TestSuite:
             if len(list(results1)) == 0 and len(list(results1)) == 0:
                 status = "Failed: Intended behaviour"
                 error_type = "Known, intended bevaviour that does not comply with SPARQL standard"
+        
+        expected_string, query_string = self.generate_html_for_xml(expected_xml, query_xml,copied_expected_tree, copied_query_tree, expected_tree, query_tree)
+        test_name = test[2]
+        self.test_data[test_name].update({"expectedHtml": expected_string, "gotHtml": query_string})
 
         return status, error_type
 
-    def handle_bindings(self, indent: int, level: int, bindings: list, remaining_bindings: list) -> str:
+    def handle_bindings(self, indent: int, level: int, bindings: list, remaining_bindings: list, mark_red: list) -> str:
         """
         Formats the "bindings" list with HTML labels as needed for highlighting.
 
@@ -506,6 +570,7 @@ class TestSuite:
             level (int): Current nesting level for correct indentation.
             bindings (list): List of binding items to format.
             remaining_bindings (list): List of binding items used for comparison.
+            mark_red (list): List containing the elements that must be highlighted red.
 
         Returns:
             str: An HTML-formatted string representing the bindings list with highlighted items.
@@ -517,13 +582,20 @@ class TestSuite:
             parts.append("\n" + " " * (indent * (level + 1)))
             
             # Apply label if the binding matches any in the reference bindings
-            label = "<label class=\"red\">" if binding in remaining_bindings else ""
-            end_label = "</label>" if label else ""
+            if binding in remaining_bindings:
+                if binding in mark_red:
+                    label = "<label class=\"red\">"
+                else:
+                    label = "<label class=\"yellow\">"
+                end_label = "</label>"
+            else:
+                label = ""
+                end_label = ""
             parts.append(f"{label}{self.json_to_string(binding, {}, level + 1)}{end_label}")
         parts.append("\n" + " " * (indent * level) + "]")
         return "".join(parts)
 
-    def json_dict(self, indent: int, level: int, json_dict: dict, remaining_dict: dict) -> str:
+    def json_dict(self, indent: int, level: int, json_dict: dict, remaining_dict: dict, mark_red: list) -> str:
         """
         Formats a dictionary with HTML labels as needed for highlighting.
 
@@ -536,6 +608,7 @@ class TestSuite:
             level (int): Current nesting level for correct indentation.
             json_dict (dict): Dictionary to format.
             remaining_dict (dict): Dictionary used for comparison to determine highlighting.
+            mark_red (list): List containing the elements that must be highlighted red.
 
         Returns:
             str: An HTML-formatted string representing the dictionary with highlighted elements.
@@ -548,18 +621,18 @@ class TestSuite:
 
             if isinstance(value, list) and key == "vars":
                 # Special handling for "vars" in "head"
-                parts.append(f"\"{key}\": {self.json_to_string(value, remaining_dict.get(key, []), level + 1)}")
+                parts.append(f"\"{key}\": {self.json_to_string(value, remaining_dict.get(key, []),mark_red, level + 1)}")
             elif isinstance(value, list) and key == "bindings":
                 # Special handling for "bindings" in "results"
-                formatted_bindings = self.handle_bindings(indent, level, value, remaining_dict.get(key, []))
+                formatted_bindings = self.handle_bindings(indent, level, value, remaining_dict.get(key, []), mark_red)
                 parts.append(f"\"{key}\": {formatted_bindings}")
             else:
-                parts.append(f"\"{key}\": {self.json_to_string(value, remaining_dict.get(key, {}), level + 1)}")
+                parts.append(f"\"{key}\": {self.json_to_string(value, remaining_dict.get(key, {}), mark_red, level + 1)}")
         
         parts.append("\n" + " " * (indent * level) + "}")
         return "".join(parts)
 
-    def json_list(self, indent: int, level: int, j_list: list, remaining_list: list) -> str:
+    def json_list(self, indent: int, level: int, json_list: list, remaining_list: list, mark_red: list) -> str:
         """
         Formats a list with HTML labels as needed for highlighting.
 
@@ -569,31 +642,40 @@ class TestSuite:
         Parameters:
             indent (int): Number of spaces used for indentation.
             level (int): Current nesting level for correct indentation.
-            j_list (list): List of items to format.
+            json_list (list): List of items to format.
             remaining_list (list): List used for comparison to determine highlighting.
+            mark_red (list): List containing the elements that must be highlighted red.
 
         Returns:
             str: An HTML-formatted string representing the list with highlighted elements.
         """
         parts = ["["]
-        for i, item in enumerate(j_list):
+        for i, item in enumerate(json_list):
             if i > 0:
                 parts.append(", ")
             parts.append("\n" + " " * (indent * (level + 1)))
             # Apply label if the item is in the reference list
-            label = "<label class=\"red\">" if item in remaining_list else ""
-            end_label = "</label>" if label else ""
+            if item in remaining_list:
+                if item in mark_red:
+                    label = "<label class=\"red\">"
+                else:
+                    label = "<label class=\"yellow\">"
+                end_label = "</label>"
+            else:
+                label = ""
+                end_label = ""
             parts.append(f"{label}\"{item}\"{end_label}")
         parts.append("\n" + " " * (indent * level) + "]")
         return "".join(parts)
 
-    def json_to_string(self, json_obj, remaining_json, level=0) -> str:
+    def json_to_string(self, json_obj, remaining_json, mark_red: list, level=0) -> str:
         """
         Converts a JSON object to a readable string and highlights elements found in the reference JSON with <"></">.
 
         Parameters:
         json_obj (dict or list): The JSON object to be converted.
         remaining_json (dict or list): SON object to check for matching elements.
+        mark_red (list): List containing the elements that must be highlighted red.
         level (int): Current recursion level to calculate indentation.
 
         Returns:
@@ -601,26 +683,27 @@ class TestSuite:
         """
         indent=4
         if isinstance(json_obj, dict):
-            return self.json_dict(indent, level, json_obj, remaining_json)
+            return self.json_dict(indent, level, json_obj, remaining_json, mark_red)
         elif isinstance(json_obj, list):
-            return self.json_list(indent, level, json_obj, remaining_json)
+            return self.json_list(indent, level, json_obj, remaining_json, mark_red)
         elif isinstance(json_obj, str):
             return f"\"{json_obj}\""
         else:
             return str(json_obj)
 
-    def generate_highlighted_string_json(self, json_obj: dict, remaining_json: dict) -> str:
+    def generate_highlighted_string_json(self, json_obj: dict, remaining_json: dict, mark_red: list) -> str:
         """
         Generates an HTML-formatted and highlighted string representation of a JSON object.
 
         Parameters:
             json_obj: The JSON object to be formatted and highlighted.
             remaining_json: The JSON object used as a reference for highlighting elements in the json_obj.
+            mark_red (list): List containing the elements that must be highlighted red.
 
         Returns:
             str: An HTML string representing the formatted and highlighted JSON object.
         """
-        return f"<pre>{self.json_to_string(json_obj, remaining_json)}</pre>"
+        return f"{self.json_to_string(json_obj, remaining_json, mark_red)}"
 
     def json_elements_equal(self, element1: dict, element2: dict, compare_with_intended_behaviour: bool) -> bool:
         """
@@ -638,12 +721,6 @@ class TestSuite:
         Returns:
             bool: True if considered equal otherwise False.
         """
-        number_types = [
-        "http://www.w3.org/2001/XMLSchema#integer",
-        "http://www.w3.org/2001/XMLSchema#double",
-        "http://www.w3.org/2001/XMLSchema#decimal",
-        "http://www.w3.org/2001/XMLSchema#float"
-        ]
         if set(element1.keys()) != set(element2.keys()):
             return False
         for key in element1:
@@ -651,14 +728,19 @@ class TestSuite:
             field2 = element2[key]
 
             if isinstance(field1, dict) and isinstance(field2, dict):
-                if set(field1.keys()) != set(field2.keys()):
-                    return False
-                for sub_key in field1:
-                    if field1[sub_key] != field2[sub_key]:
-                        if field1.get("datatype") in number_types and field2.get("datatype") in number_types and sub_key == "value":
-                            if float(field1[sub_key]) == float(field2[sub_key]):
+                for sub_key in set(field1.keys()) | set(field2.keys()):
+                    if field1.get(sub_key) != field2.get(sub_key):
+                        if str(field1.get("type")) == "bnode" and str(field2.get("type")) == "bnode" and str(sub_key) == "value":
+                            if field1.get("value") not in self.map_bnodes and field2.get("value") not in self.map_bnodes:
+                                self.map_bnodes[field1.get("value")] = field2.get("value")
+                                self.map_bnodes[field2.get("value")] = field1.get("value")
                                 continue
-                        if (self.alias.get(field1[sub_key]) == field2[sub_key] or self.alias.get(field2[sub_key]) == field1[sub_key]) and compare_with_intended_behaviour:
+                            if self.map_bnodes.get(field1.get("value")) == field2.get("value") and self.map_bnodes.get(field2.get("value")) == field1.get("value"):
+                                continue
+                        if str(field1.get("datatype")) in self.number_types and str(field2.get("datatype")) in self.number_types and str(sub_key) == "value":
+                            if float(field1.get(sub_key)) == float(field2.get(sub_key)):
+                                continue
+                        if ((str(self.alias.get(str(field1.get(sub_key)))) == str(field2.get(sub_key))) or (str(self.alias.get(str(field2.get(sub_key)))) == str(field1.get(sub_key)))) and compare_with_intended_behaviour:
                             continue
                         return False
             else:
@@ -682,6 +764,7 @@ class TestSuite:
         Returns:
             tuple: A tuple containing the status and error type.
         """
+        self.map_bnodes = {}
         status = "Failed"
         error_type = "RESULTS NOT THE SAME"
         expected = json.loads(expected_json)
@@ -706,24 +789,20 @@ class TestSuite:
 
         expected["results"]["bindings"] = unique_bindings1
         query["results"]["bindings"] = unique_bindings2
-        
-        expected_string = self.generate_highlighted_string_json(json.loads(expected_json), expected)
-        query_string = self.generate_highlighted_string_json(json.loads(query_json), query)
-        test_name = test[2]
-        self.test_data[test_name].update({"expectedHtml": expected_string, "gotHtml": query_string})
 
-        if len(expected["head"]["vars"]) != 0 and len(query["head"]["vars"]) != 0:
-            return status, error_type
-
-        if len(expected["results"]["bindings"]) == 0 and len(query["results"]["bindings"]) == 0:
+        if len(expected["results"]["bindings"]) == 0 and len(query["results"]["bindings"]) == 0 and len(expected["head"]["vars"]) == 0 and len(query["head"]["vars"]) == 0:
             status = "Passed"
             error_type = ""
         else:
             unique_bindings1 = [b1 for b1 in bindings1 if not any(self.json_elements_equal(b1, b2, compare_with_intended_behaviour=True) for b2 in bindings2)]
             unique_bindings2 = [b2 for b2 in bindings2 if not any(self.json_elements_equal(b2, b1, compare_with_intended_behaviour=True) for b1 in bindings1)]
-            if len(expected["results"]["bindings"]) == 0 and len(query["results"]["bindings"]) == 0:
-                status = "Passed"
-                error_type = ""
+            if len(unique_bindings1) == 0 and len(unique_bindings2) == 0:
+                status = "Failed: Intended behavior"
+                error_type = "Known, intended behavior that does not comply with SPARQL standard"
+        expected_string = self.generate_highlighted_string_json(json.loads(expected_json), expected, unique_bindings1)
+        query_string = self.generate_highlighted_string_json(json.loads(query_json), query, unique_bindings2)
+        test_name = test[2]
+        self.test_data[test_name].update({"expectedHtml": expected_string, "gotHtml": query_string})
         
         return status, error_type
 
@@ -740,6 +819,15 @@ class TestSuite:
         Returns:
             bool: True if the values are considered equal.
         """
+        # Blank nodes
+        if value1[0] == "_" and value2[0] == "_":
+            if value1 not in self.map_bnodes and value2 not in self.map_bnodes:
+                self.map_bnodes[value1] = value2
+                self.map_bnodes[value2] = value1
+                return True
+            if self.map_bnodes.get(value1) == value2 and self.map_bnodes.get(value2) == value1:
+                return True
+            return False
         # In most cases the values are in the same representation
         if value1 == value2:
             return True
@@ -797,7 +885,7 @@ class TestSuite:
             index += 1
         return result
 
-    def generate_highlighted_string_sv(self, array: list, remaining: list, result_type: str) -> str:
+    def generate_highlighted_string_sv(self, array: list, remaining: list, mark_red: list, result_type: str) -> str:
         """
         Generates a string representation of an array, with specific rows highlighted.
 
@@ -814,12 +902,15 @@ class TestSuite:
         result_string = ""
         for row in array:
             if row in remaining:
-                result_string += "<label class=\"red\">"
+                if row in mark_red:
+                    result_string += "<label class=\"red\">"
+                else:
+                    result_string += "<label class=\"yellow\">"
                 result_string += escape(self.row_to_string(row, separator))
                 result_string += "</label>\n"
             else:
                 result_string += escape(self.row_to_string(row, separator)) + "\n"
-        return "<pre>" + result_string + "</pre>"
+        return result_string
 
     def compare_array(self, expected_result: list, result: list, result_copy: list, expected_result_copy: list, use_config: bool):
         """
@@ -876,23 +967,36 @@ class TestSuite:
         Returns:
             A tuple of test status and error message.
         """
+        self.map_bnodes = {}
+        status = "Failed"
+        error_type = "RESULTS NOT THE SAME"
+
         expected_array = self.convert_csv_tsv_to_array(expected_string, result_format)
         actual_array = self.convert_csv_tsv_to_array(query_result, result_format)
         actual_array_copy = actual_array.copy()  
         expected_array_copy = expected_array.copy()
+        actual_array_mark_red = []
+        expected_array_mark_red = []
 
         self.compare_array(expected_array, actual_array, actual_array_copy, expected_array_copy, use_config=False)
-        expected_html = self.generate_highlighted_string_sv(expected_array, expected_array_copy, result_format)
-        actual_html = self.generate_highlighted_string_sv(actual_array, actual_array_copy, result_format)
+
+        if len(actual_array_copy) == 0 and len(expected_array_copy) == 0:
+            status = "Passed"
+            error_type = ""
+        else:
+            actual_array_mark_red = actual_array_copy.copy()
+            expected_array_mark_red = expected_array_copy.copy()
+            self.compare_array(expected_array_copy, actual_array_copy, actual_array_mark_red, expected_array_mark_red, use_config=True)
+            if len(actual_array_mark_red) == 0 and len(expected_array_mark_red) == 0:
+                status = "Failed: Intended behavior" 
+                error_type = "Known, intended behavior that does not comply with SPARQL standard"
+        
+        expected_html = self.generate_highlighted_string_sv(expected_array, expected_array_copy, expected_array_mark_red, result_format)
+        actual_html = self.generate_highlighted_string_sv(actual_array, actual_array_copy, actual_array_mark_red, result_format)
         test_name = test[2]
         self.test_data[test_name].update({"expectedHtml": expected_html, "gotHtml": actual_html})
-        if len(actual_array_copy) == 0 and len(expected_array_copy) == 0:
-            return "Passed", ""
-        self.compare_array(expected_array_copy.copy(), actual_array_copy.copy(), actual_array_copy, expected_array_copy, use_config=True)
-        if len(actual_array_copy) == 0 and len(expected_array_copy) == 0:
-            return "Failed: Intended behavior", "Known, intended behavior that does not comply with SPARQL standard"
-        else:
-            return "Failed", "RESULTS NOT THE SAME"
+
+        return status, error_type
 
     def evaluate_query(self, expected_string: str, query_result: str, test: tuple, result_format: str) -> tuple:
         """
@@ -983,7 +1087,8 @@ class TestSuite:
         type_name = self.test_data[test[2]]["typeName"]
         expected_string = self.test_data[test[2]]["resultFile"]
         query_string = self.test_data[test[2]]["queryFile"].replace("\n", " ")
-
+        print(self.test_data[test[2]]["queryFile"])
+        print(self.test_data[test[2]]["resultFile"])
         self.test_data[test[2]]["querySent"] = query_string
         result_format = test[1][test[1].rfind(".") + 1:]
 
@@ -1051,6 +1156,8 @@ class TestSuite:
         Returns:
             True if indexing is successful, False otherwise.
         """
+        print(graph)
+        print(graph_path)
         index_log = self.index(graph_path)
 
         if "Index build completed" not in index_log:
@@ -1070,6 +1177,8 @@ class TestSuite:
         Returns:
             True if the environment is successfully prepared, False otherwise.
         """
+        print(graph)
+        print(graph_path)
         if not self.index_graph(graph, graph_path):
             return False
         if not self.start_graph_server(graph):
