@@ -346,7 +346,6 @@ class TestSuite:
 
         try:
             response = requests.post(url, headers=headers, data=query.encode("utf-8"))
-            print(response.text)
             return (response.status_code, response.text)
         except requests.exceptions.RequestException as e:
             return (500, f"Query execution error: {str(e)}")
@@ -819,8 +818,10 @@ class TestSuite:
         Returns:
             bool: True if the values are considered equal.
         """
+        if value1 is None or value2 is None:
+            return False
         # Blank nodes
-        if value1[0] == "_" and value2[0] == "_":
+        if len(value1) > 1 and len(value2) > 1 and value1[0] == "_" and value2[0] == "_":
             if value1 not in self.map_bnodes and value2 not in self.map_bnodes:
                 self.map_bnodes[value1] = value2
                 self.map_bnodes[value2] = value1
@@ -831,8 +832,6 @@ class TestSuite:
         # In most cases the values are in the same representation
         if value1 == value2:
             return True
-        if value1 is None or value2 is None:
-            return False
         # Handle exceptions ex. 30000 == 3E4
         if value1[0].isnumeric() and value2[0].isnumeric() and is_number:
             if float(value1) == float(value2):
@@ -1087,8 +1086,6 @@ class TestSuite:
         type_name = self.test_data[test[2]]["typeName"]
         expected_string = self.test_data[test[2]]["resultFile"]
         query_string = self.test_data[test[2]]["queryFile"].replace("\n", " ")
-        print(self.test_data[test[2]]["queryFile"])
-        print(self.test_data[test[2]]["resultFile"])
         self.test_data[test[2]]["querySent"] = query_string
         result_format = test[1][test[1].rfind(".") + 1:]
 
@@ -1156,8 +1153,6 @@ class TestSuite:
         Returns:
             True if indexing is successful, False otherwise.
         """
-        print(graph)
-        print(graph_path)
         index_log = self.index(graph_path)
 
         if "Index build completed" not in index_log:
@@ -1177,8 +1172,6 @@ class TestSuite:
         Returns:
             True if the environment is successfully prepared, False otherwise.
         """
-        print(graph)
-        print(graph_path)
         if not self.index_graph(graph, graph_path):
             return False
         if not self.start_graph_server(graph):
@@ -1223,6 +1216,7 @@ class TestSuite:
         for path in dir_paths:
             print("Extracting tests from: " + path)
             self.remove_index()
+            print(self.path_to_test_suite + path + "/manifest.ttl")
             self.index(self.path_to_test_suite + path + "/manifest.ttl")
             self.start_server()
             for query in queries:
@@ -1262,13 +1256,13 @@ def main():
         print(f"Usage to extract tests: python3 {sys.argv[0]} <path to binaries> <file> extract\n Usage to extract tests: python3 {sys.argv[0]} <path to binaries> <file> <name of the run>)")
         sys.exit()
     test_suite = TestSuite(args[0], args[2])
+    test_suite.initialize_config()
     if args[2] == "extract":
         print("GET TESTS!")
         test_suite.extract_tests(args[1])
     else:
         print("RUN TESTS!")
         test_suite.initialize_tests(args[1])
-        test_suite.initialize_config()
         test_suite.run()
         test_suite.generate_json_file()
     print("DONE!")
