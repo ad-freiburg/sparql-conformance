@@ -367,7 +367,7 @@ class TestSuite:
 
         escaped_element_str = escape(element_str)
         if escaped_element_str in escaped_xml:
-            return escaped_xml.replace(escaped_element_str, f"<label class='{label}'>{escaped_element_str}</label>")
+            return escaped_xml.replace(escaped_element_str, f'</label><label class="{label}">{escaped_element_str}</label><label class="normal">')
         else:
             return escaped_xml
 
@@ -429,8 +429,8 @@ class TestSuite:
         Returns:
             tuple: A tuple containing two HTML-escaped and highlighted XML strings.
         """
-        highlighted_xml1 = f"{self.generate_highlighted_string_xml(xml1, self.strip_namespace(remaining_tree1), self.strip_namespace(red_tree1))}"
-        highlighted_xml2 = f"{self.generate_highlighted_string_xml(xml2, self.strip_namespace(remaining_tree2), self.strip_namespace(red_tree2))}"
+        highlighted_xml1 = f'<label class="normal">{self.generate_highlighted_string_xml(xml1, self.strip_namespace(remaining_tree1), self.strip_namespace(red_tree1))}</label>'
+        highlighted_xml2 = f'<label class="normal">{self.generate_highlighted_string_xml(xml2, self.strip_namespace(remaining_tree2), self.strip_namespace(red_tree2))}</label>'
 
         return highlighted_xml1, highlighted_xml2
 
@@ -583,10 +583,10 @@ class TestSuite:
             # Apply label if the binding matches any in the reference bindings
             if binding in remaining_bindings:
                 if binding in mark_red:
-                    label = "<label class=\"red\">"
+                    label = '</label><label class="red">'
                 else:
-                    label = "<label class=\"yellow\">"
-                end_label = "</label>"
+                    label = '</label><label class="yellow">'
+                end_label = '</label><label class="normal">'
             else:
                 label = ""
                 end_label = ""
@@ -656,10 +656,10 @@ class TestSuite:
             # Apply label if the item is in the reference list
             if item in remaining_list:
                 if item in mark_red:
-                    label = "<label class=\"red\">"
+                    label = '</label><label class="red">'
                 else:
-                    label = "<label class=\"yellow\">"
-                end_label = "</label>"
+                    label = '</label><label class="yellow>"'
+                end_label = '</label><label class="normal">'
             else:
                 label = ""
                 end_label = ""
@@ -702,7 +702,7 @@ class TestSuite:
         Returns:
             str: An HTML string representing the formatted and highlighted JSON object.
         """
-        return f"{self.json_to_string(json_obj, remaining_json, mark_red)}"
+        return f'<label class="normal">{self.json_to_string(json_obj, remaining_json, mark_red)}</label>'
 
     def json_elements_equal(self, element1: dict, element2: dict, compare_with_intended_behaviour: bool) -> bool:
         """
@@ -902,14 +902,14 @@ class TestSuite:
         for row in array:
             if row in remaining:
                 if row in mark_red:
-                    result_string += "<label class=\"red\">"
+                    result_string += '</label><label class="red">'
                 else:
-                    result_string += "<label class=\"yellow\">"
+                    result_string += '</label><label class="yellow">'
                 result_string += escape(self.row_to_string(row, separator))
-                result_string += "</label>\n"
+                result_string += '</label>\n<label class="normal">'
             else:
                 result_string += escape(self.row_to_string(row, separator)) + "\n"
-        return result_string
+        return '<label class="normal">' + result_string + '</label>'
 
     def compare_array(self, expected_result: list, result: list, result_copy: list, expected_result_copy: list, use_config: bool):
         """
