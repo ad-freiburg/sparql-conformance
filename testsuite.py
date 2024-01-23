@@ -440,7 +440,7 @@ class TestSuite:
         Parameters:
             e1 (ET.Element): The first XML element
             element2 (ET.Element): The second XML element
-            compare_with_intended_behaviour (bool): Bool to determine whether to use intended behavior aliases in comparison.
+            compare_with_intended_behaviour (bool): Bool to determine whether to use intended behaviour aliases in comparison.
 
         Returns:
             bool: True if elements are considered equal and if not False.
@@ -539,7 +539,7 @@ class TestSuite:
         query_tree_string = ET.tostring(query_tree.getroot())
         copied_query_tree = ET.ElementTree(ET.fromstring(query_tree_string))
 
-        if len(list(results1)) == 0 and len(list(results1)) == 0 and len(list(head1)) == 0 and len(list(head2)):
+        if len(list(results1)) == 0 and len(list(results2)) == 0 and len(list(head1)) == 0 and len(list(head2)):
             status = "Passed"
             error_type = ""
         else:
@@ -548,7 +548,7 @@ class TestSuite:
         
             if len(list(results1)) == 0 and len(list(results1)) == 0:
                 status = "Failed: Intended behaviour"
-                error_type = "Known, intended bevaviour that does not comply with SPARQL standard"
+                error_type = "Known, intended behaviour that does not comply with SPARQL standard"
         
         expected_string, query_string = self.generate_html_for_xml(expected_xml, query_xml,copied_expected_tree, copied_query_tree, expected_tree, query_tree)
         test_name = test[2]
@@ -797,7 +797,7 @@ class TestSuite:
             unique_bindings2 = [b2 for b2 in bindings2 if not any(self.json_elements_equal(b2, b1, compare_with_intended_behaviour=True) for b1 in bindings1)]
             if len(unique_bindings1) == 0 and len(unique_bindings2) == 0:
                 status = "Failed: Intended behavior"
-                error_type = "Known, intended behavior that does not comply with SPARQL standard"
+                error_type = "Known, intended behaviour that does not comply with SPARQL standard"
         expected_string = self.generate_highlighted_string_json(json.loads(expected_json), expected, unique_bindings1)
         query_string = self.generate_highlighted_string_json(json.loads(query_json), query, unique_bindings2)
         test_name = test[2]
@@ -988,7 +988,7 @@ class TestSuite:
             self.compare_array(expected_array_copy, actual_array_copy, actual_array_mark_red, expected_array_mark_red, use_config=True)
             if len(actual_array_mark_red) == 0 and len(expected_array_mark_red) == 0:
                 status = "Failed: Intended behavior" 
-                error_type = "Known, intended behavior that does not comply with SPARQL standard"
+                error_type = "Known, intended behaviour that does not comply with SPARQL standard"
         
         expected_html = self.generate_highlighted_string_sv(expected_array, expected_array_copy, expected_array_mark_red, result_format)
         actual_html = self.generate_highlighted_string_sv(actual_array, actual_array_copy, actual_array_mark_red, result_format)

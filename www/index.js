@@ -1,7 +1,6 @@
 
 $(document).ready(async function () {
     var jsonData = await fetchData();
-    console.log(jsonData)
     var selectedRun = Object.keys(jsonData)[0];
     $(`#table-select-runs1 tr[data-name=${selectedRun}]`).addClass("row-selected");
     var selectedRun2 = -1;
@@ -9,11 +8,26 @@ $(document).ready(async function () {
     var currentArray = jsonArray;
     var currentTestName = -1;
     buildRunTables(jsonData);
+    buildFilter(jsonArray);
+    currentArray = filterTable(jsonArray);
     buildTable(currentArray, currentTestName);
-    showCorrectElement(currentTestName, selectedRun2)
+    showCorrectElement(currentTestName, selectedRun2);
 
     $(document).on('click', '.button-toggle', function() {
         $(`#div-${this.id}`).toggleClass("visually-hidden");
+    });
+
+    $(".btn-check").on("click", function() {
+        var labelClass = $(this)[0].id.replace("button-", "");
+        var labelNodes = document.querySelectorAll(`label.${labelClass}`);
+        labelNodes.forEach(function(label) {
+            label.classList.toggle("visually-hidden");
+        });
+    });
+
+    $(".filter-checkboxes").on("click", function() {
+        currentArray = filterTable(jsonArray);
+        buildTable(currentArray, currentTestName);
     });
 
     $("#button-overview").on("click", function() {
@@ -59,6 +73,8 @@ $(document).ready(async function () {
         jsonArray = getTestRun(selectedRun, selectedRun2, jsonData);
         currentArray = jsonArray;
         currentTestName = -1;
+        buildFilter(jsonArray);
+        currentArray = filterTable(jsonArray);
         buildTable(currentArray, currentTestName);
         showCorrectElement(currentTestName, selectedRun2)
     });
@@ -75,6 +91,8 @@ $(document).ready(async function () {
         jsonArray = getTestRun(selectedRun, selectedRun2, jsonData);
         currentArray = jsonArray;
         currentTestName = -1;
+        buildFilter(jsonArray);
+        currentArray = filterTable(jsonArray);
         buildTable(currentArray, currentTestName);
         showCorrectElement(currentTestName, selectedRun2)
     });
@@ -103,9 +121,6 @@ async function fetchData() {
 }
 
 function getTestRun(run1, run2, jsonData) {
-    console.log(run1)
-    console.log(run2)
-    console.log(jsonData)
     var result = {};
     if (run1 == -1 || run2 == -1) {
         if (run1 != -1) {
@@ -202,6 +217,11 @@ function buildTable(jsonArray, currentTestName){
 }
 
 function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2){
+    var buttonNodes = document.querySelectorAll(`#buttons-text input`);
+    buttonNodes.forEach(function(node) {
+        node.checked = true;
+    });
+
     var testDetails = jsonArray.find((test) => test.name === testName);
     var overviewEntries = [
         { label: "Test Name", value: testDetails.name, key: "name", line: "True" },
@@ -282,13 +302,13 @@ function compare(dict1, dict2) {
 
 function showCorrectElement(currentTestName, selectedRun2){
     $("#nothing").addClass("visually-hidden");
-    $("#button-changeInfo").addClass("visually-hidden");
+    $("#buttons").addClass("visually-hidden");
     $("#compare").addClass("visually-hidden");
     $("#single").addClass("visually-hidden");
     if (currentTestName == -1) {
         $("#nothing").removeClass("visually-hidden");
     } else {
-        $("#button-changeInfo").removeClass("visually-hidden");
+        $("#buttons").removeClass("visually-hidden");
         if (selectedRun2 == -1) {
             $("#single").removeClass("visually-hidden");
         } else {
@@ -300,7 +320,7 @@ function showCorrectElement(currentTestName, selectedRun2){
 function createSingleLineElement(heading, text){
     var html = '<div class="row container-info">';
         html += `<div class="col heading"><strong>${heading}:</strong></div>`
-        html += `<div class="col results-wrapper""><pre>${text}</pre></div>`;
+        html += `<div class="col results-wrapper"><pre>${text}</pre></div>`;
     return html += '</div>';
 }
 
@@ -308,8 +328,85 @@ function createElement(heading, text){
     var id = Math.random().toString(36).slice(2, 11);
     var html = `<div class="row container-info">`;
         html += `<div class="col heading"><strong>${heading}:</strong></div>`;
-        html += `<div class="col button"><div class="button-show" class="btn-group" role="group" aria-label="Basic example">`;
+        html += `<div class="col button"><div class="button-show btn-group-sm" role="group" aria-label="Basic example">`;
         html += `<button id="${id}" type="button" class="button-toggle btn btn-primary">Show/Hide</button></div></div>`;
         html += `<div class="row"><div id="div-${id}" class="col results-wrapper visually-hidden"><pre>${text}</pre></div></div>`;
-    return html;
+    return html += `</div>`;
+}
+
+function addIfNotPresent(array, item) {
+    if (!array.includes(item)) {
+        array.push(item);
+    }
+    return array;
+}
+
+function buildFilter(jsonArray){
+    var status = document.getElementById("container-filter-status");
+    var error = document.getElementById("container-filter-error");
+    var type = document.getElementById("container-filter-type");
+    var group = document.getElementById("container-filter-group");
+    status.innerHTML = "";
+    error.innerHTML = "";
+    type.innerHTML = "";
+    group.innerHTML = "";
+    var statusItems = []
+    var errorTypeItems = []
+    var testTypeItems = []
+    var testGroupItems = []
+    for (let testId in jsonArray) {
+        statusItems = addIfNotPresent(statusItems, jsonArray[testId].status);
+        errorTypeItems = addIfNotPresent(errorTypeItems, jsonArray[testId].errorType);
+        testTypeItems = addIfNotPresent(testTypeItems, jsonArray[testId].typeName);
+        testGroupItems = addIfNotPresent(testGroupItems, jsonArray[testId].group);
+    }
+    status.innerHTML = createChekboxes(statusItems);
+    error.innerHTML = createChekboxes(errorTypeItems);
+    type.innerHTML = createChekboxes(testTypeItems);
+    group.innerHTML = createChekboxes(testGroupItems);
+}
+
+function createChekboxes(items){
+    var html = "";
+    for (let itemId in items) {
+        html += `<div class="form-check form-check-inline">`;
+        html += `<input class="form-check-input filter-checkboxes" type="checkbox" id="filter-${items[itemId].replace(/\s+/g, '')}" value="${items[itemId]}" checked>`;
+        html += `<label class="form-check-label" for="filter-${items[itemId].replace(/\s+/g, '')}">${items[itemId]}</label></div>`;
+    } 
+    return html
+}
+
+function getCheckedValues(containerId){
+    var inputNodes = document.querySelectorAll(`#${containerId} input`);
+    var values = [];
+    inputNodes.forEach(function(node) {
+        if (node.checked) {
+            values.push(node.value);
+        }
+    });
+    return values;
+}
+
+function filterTable(jsonArray){
+    var filteredArray = []
+    var statusFilter = getCheckedValues("container-filter-status");
+    var errorFilter = getCheckedValues("container-filter-error");
+    var typeFilter = getCheckedValues("container-filter-type");
+    var groupFilter = getCheckedValues("container-filter-group");
+    jsonArray.forEach(function(test) {
+        if (!statusFilter.includes(test.status)){
+            return;
+        }
+        if (!errorFilter.includes(test.errorType)){
+            return;
+        }
+        if (!typeFilter.includes(test.typeName)){
+            return;
+        }
+        if (!groupFilter.includes(test.group)){
+            return;
+        }
+        filteredArray.push(test)
+    });
+    return filteredArray
 }
