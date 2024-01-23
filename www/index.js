@@ -17,17 +17,18 @@ $(document).ready(async function () {
         $(`#div-${this.id}`).toggleClass("visually-hidden");
     });
 
+    $(document).on('click', '.form-check-input', function() {
+        console.log("TEST")
+        currentArray = filterTable(jsonArray);
+        buildTable(currentArray, currentTestName);
+    });
+
     $(".btn-check").on("click", function() {
         var labelClass = $(this)[0].id.replace("button-", "");
         var labelNodes = document.querySelectorAll(`label.${labelClass}`);
         labelNodes.forEach(function(label) {
             label.classList.toggle("visually-hidden");
         });
-    });
-
-    $(".filter-checkboxes").on("click", function() {
-        currentArray = filterTable(jsonArray);
-        buildTable(currentArray, currentTestName);
     });
 
     $("#button-overview").on("click", function() {
@@ -370,7 +371,7 @@ function createChekboxes(items){
     var html = "";
     for (let itemId in items) {
         html += `<div class="form-check form-check-inline">`;
-        html += `<input class="form-check-input filter-checkboxes" type="checkbox" id="filter-${items[itemId].replace(/\s+/g, '')}" value="${items[itemId]}" checked>`;
+        html += `<input class="form-check-input" type="checkbox" id="filter-${items[itemId].replace(/\s+/g, '')}" value="${items[itemId]}" checked>`;
         html += `<label class="form-check-label" for="filter-${items[itemId].replace(/\s+/g, '')}">${items[itemId]}</label></div>`;
     } 
     return html
