@@ -98,6 +98,9 @@ class TestSuite:
                                     "http://www.w3.org/2001/XMLSchema#decimal"
                                     ]
                       }
+            self.alias = config["alias"]
+            self.number_types = config["number_types"]
+            self.path_to_test_suite = config["path_to_testsuite"]
             with open(path_to_config, "w") as file:
                     json.dump(config, file, indent=4)
             return
@@ -1216,7 +1219,6 @@ class TestSuite:
         for path in dir_paths:
             print("Extracting tests from: " + path)
             self.remove_index()
-            print(self.path_to_test_suite + path + "/manifest.ttl")
             self.index(self.path_to_test_suite + path + "/manifest.ttl")
             self.start_server()
             for query in queries:
