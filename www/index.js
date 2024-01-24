@@ -9,7 +9,7 @@ $(document).ready(async function () {
     var currentTestName = -1;
     buildRunTables(jsonData);
     buildFilter(jsonArray);
-    currentArray = filterTable(jsonArray);
+    currentArray = filterTable($("#search-input").val(), jsonArray);
     buildTable(currentArray, currentTestName);
     showCorrectElement(currentTestName, selectedRun2);
 
@@ -18,8 +18,7 @@ $(document).ready(async function () {
     });
 
     $(document).on('click', '.form-check-input', function() {
-        console.log("TEST")
-        currentArray = filterTable(jsonArray);
+        currentArray = filterTable($("#search-input").val(), jsonArray);
         buildTable(currentArray, currentTestName);
     });
 
@@ -31,6 +30,11 @@ $(document).ready(async function () {
         });
     });
 
+    $("#search-input").on("keyup", function(){
+        var value = $(this).val();
+        currentArray = filterTable(value, jsonArray);
+        buildTable(currentArray, currentTestName);
+    });
     $("#button-overview").on("click", function() {
         if (selectedRun2 == -1) {
             $("#container-test-details").addClass("visually-hidden");
@@ -75,7 +79,7 @@ $(document).ready(async function () {
         currentArray = jsonArray;
         currentTestName = -1;
         buildFilter(jsonArray);
-        currentArray = filterTable(jsonArray);
+        currentArray = filterTable($("#search-input").val(), jsonArray);
         buildTable(currentArray, currentTestName);
         showCorrectElement(currentTestName, selectedRun2)
     });
@@ -93,7 +97,7 @@ $(document).ready(async function () {
         currentArray = jsonArray;
         currentTestName = -1;
         buildFilter(jsonArray);
-        currentArray = filterTable(jsonArray);
+        currentArray = filterTable($("#search-input").val(),jsonArray);
         buildTable(currentArray, currentTestName);
         showCorrectElement(currentTestName, selectedRun2)
     });
@@ -388,8 +392,8 @@ function getCheckedValues(containerId){
     return values;
 }
 
-function filterTable(jsonArray){
-    var filteredArray = []
+function filterTable(value, jsonArray){
+    var filteredArray = [];
     var statusFilter = getCheckedValues("container-filter-status");
     var errorFilter = getCheckedValues("container-filter-error");
     var typeFilter = getCheckedValues("container-filter-type");
@@ -407,7 +411,23 @@ function filterTable(jsonArray){
         if (!groupFilter.includes(test.group)){
             return;
         }
-        filteredArray.push(test)
+        filteredArray.push(test);
     });
-    return filteredArray
+    return searchTable(value, filteredArray);
+}
+
+function searchTable(value, currentArray){
+    var searchedArray = [];
+    value = value.toLowerCase();
+    currentArray.forEach(function(test) {
+        if (test.name.toLowerCase().includes(value) || 
+        test.status.toLowerCase().includes(value)||
+         test.errorType.toLowerCase().includes(value)|| 
+         test.typeName.toLowerCase().includes(value)|| 
+         test.group.toLowerCase() == value.toLowerCase()){
+            searchedArray.push(test);
+        }
+    });
+
+    return searchedArray;
 }
