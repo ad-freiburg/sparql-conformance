@@ -7,25 +7,66 @@ $(document).ready(async function () {
     var jsonArray = getTestRun(selectedRun, selectedRun2, jsonData);
     var currentArray = jsonArray;
     var currentTestName = -1;
-    buildRunTables(jsonData);
+    buildRunTables(jsonData, "", selectedRun, selectedRun2);
     buildFilter(jsonArray);
     currentArray = filterTable($("#search-input").val(), jsonArray);
     buildTable(currentArray, currentTestName);
     showCorrectElement(currentTestName, selectedRun2);
 
-    $(document).on('click', '.button-toggle', function() {
+    $(document).on("click", ".button-toggle", function() {
         $(`#div-${this.id}`).toggleClass("visually-hidden");
     });
 
-    $(document).on('click', '.form-check-input', function() {
+    $(document).on("click", ".form-check-input", function() {
         currentArray = filterTable($("#search-input").val(), jsonArray);
         buildTable(currentArray, currentTestName);
     });
 
-    $(".btn-check").on("click", function() {
-        var labelClass = $(this)[0].id.replace("button-", "");
-        var labelNodes = document.querySelectorAll(`label.${labelClass}`);
-        labelNodes.forEach(function(label) {
+    $(".button-toggle-filter").on("click", function() {
+        var buttonId = this.id;
+        var value = document.querySelector('input[name="filter-radio"]:checked').value;
+        if (value == "all"){
+            var values = ["status", "error", "type", "group"]
+        }
+        else {
+            var values = [value]
+        }
+        values.forEach(function(v) {
+            var divElem = document.getElementById(`container-filter-${v}`);
+            var checkNodes = divElem.querySelectorAll("input");
+            checkNodes.forEach(function(check) {
+                if (buttonId.endsWith("uncheck")) {
+                    check.checked = false;
+                }
+                else {
+                    check.checked = true;
+                }
+
+            });
+        });
+    });
+
+    $("#button-expand-all").on("click", function() {
+        var divNodes = document.querySelectorAll(`div.results-wrapper-big`);
+        divNodes.forEach(function(div) {
+            div.classList.remove("visually-hidden");
+        });
+    });
+
+    $("#button-collapse-all").on("click", function() {
+        var divNodes = document.querySelectorAll(`div.results-wrapper-big`);
+        divNodes.forEach(function(div) {
+            div.classList.add("visually-hidden");
+        });
+    });
+
+    $("#button-matching").on("click", function() {
+        var preNodes = document.querySelectorAll(`pre.normalText`);
+        preNodes.forEach(function(label) {
+            label.classList.toggle("visually-hidden");
+        });
+        preNodes = document.querySelectorAll(`pre.redText`);
+        preNodes.forEach(function(label) {
             label.classList.toggle("visually-hidden");
         });
     });
@@ -35,11 +76,21 @@ $(document).ready(async function () {
         currentArray = filterTable(value, jsonArray);
         buildTable(currentArray, currentTestName);
     });
+
+    $("#search-input-run").on("keyup", function(){
+        var value = $(this).val();
+        buildRunTables(jsonData, value, selectedRun, selectedRun2);
+    });
+
     $("#button-overview").on("click", function() {
         if (selectedRun2 == -1) {
+            $("#button-overview").addClass("active");
+            $("#button-details").removeClass("active");
             $("#container-test-details").addClass("visually-hidden");
             $("#container-test-overview").removeClass("visually-hidden");
         } else {
+            $("#button-overview").addClass("active");
+            $("#button-details").removeClass("active");
             $("#container-test-details-1").addClass("visually-hidden");
             $("#container-test-overview-1").removeClass("visually-hidden");
             $("#container-test-details-2").addClass("visually-hidden");
@@ -49,9 +100,13 @@ $(document).ready(async function () {
 
     $("#button-details").on("click", function() {
         if (selectedRun2 == -1) {
+            $("#button-overview").removeClass("active");
+            $("#button-details").addClass("active");
             $("#container-test-details").removeClass("visually-hidden");
             $("#container-test-overview").addClass("visually-hidden");
         } else {
+            $("#button-overview").removeClass("active");
+            $("#button-details").addClass("active");
             $("#container-test-details-1").removeClass("visually-hidden");
             $("#container-test-overview-1").addClass("visually-hidden");
             $("#container-test-details-2").removeClass("visually-hidden");
@@ -60,6 +115,8 @@ $(document).ready(async function () {
     });
 
     $("#table-select-tests").on("click", "tr", function() {
+        handleAccordion("collapse-one", true);
+        handleAccordion("collapse-three", false);
         var testName = $(this).data("name");
         if (testName != currentTestName) {
             $("#table-select-tests tr").removeClass("row-selected");
@@ -71,6 +128,7 @@ $(document).ready(async function () {
     });
 
     $("#table-select-runs1").on("click", "tr", function() {
+        handleAccordion("collapse-two", false);
         var runName = $(this).data("name");
         $(`#table-select-runs1 tr[data-name=${selectedRun}]`).removeClass("row-selected");
         $(`#table-select-runs1 tr[data-name=${runName}]`).addClass("row-selected");
@@ -85,6 +143,7 @@ $(document).ready(async function () {
     });
 
     $("#table-select-runs2").on("click", "tr", function() {
+        handleAccordion("collapse-two", false);
         $(`#table-select-runs2 tr[data-name=${selectedRun2}]`).removeClass("row-selected");
         var runName = $(this).data("name");
         if (runName == selectedRun2){
@@ -99,10 +158,24 @@ $(document).ready(async function () {
         buildFilter(jsonArray);
         currentArray = filterTable($("#search-input").val(),jsonArray);
         buildTable(currentArray, currentTestName);
-        showCorrectElement(currentTestName, selectedRun2)
+        showCorrectElement(currentTestName, selectedRun2);
     });
 
 });
+
+function handleAccordion(itemId, collapse) {
+    var item = document.getElementById(itemId);
+    var bsCollapse = new bootstrap.Collapse(item, {
+      toggle: false
+    });
+    if (collapse) {
+        bsCollapse.hide();
+    }
+    else {
+        bsCollapse.show();
+    }
+}
+
 async function fetchData() {
     var jsonData = {};
     var runs = [];
@@ -152,11 +225,17 @@ function convertObjectToArray(jsonData) {
     return jsonArray;
 }
 
-function buildRunTables(jsonData){
+function buildRunTables(jsonData, filter, selectedRun, selectedRun2){
     var tableBodies = document.getElementsByClassName("table-body-runs");
+    tableBodies[0].innerHTML = "";
+    tableBodies[1].innerHTML = "";
     const keys = Object.keys(jsonData);
     for (var i in keys) {
         var info = jsonData[keys[i]].info;
+
+        if (!keys[i].toLowerCase().includes(filter.toLowerCase())){
+            continue;
+        }
 
         function createRow() {
             var row = document.createElement("tr");
@@ -183,6 +262,8 @@ function buildRunTables(jsonData){
         tableBodies[0].appendChild(createRow());
         tableBodies[1].appendChild(createRow());
     }
+    $(`#table-select-runs1 tr[data-name=${selectedRun}]`).addClass("row-selected");
+    $(`#table-select-runs2 tr[data-name=${selectedRun2}]`).addClass("row-selected");
 }
 
 function buildTable(jsonArray, currentTestName){
@@ -230,32 +311,59 @@ function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2){
     var testDetails = jsonArray.find((test) => test.name === testName);
     var overviewEntries = [
         { label: "Test Name", value: testDetails.name, key: "name", line: "True" },
+        { label: "Comment", value: testDetails.comment, key: "comment", line: "True" },
         { label: "Test Status", value: testDetails.status, key: "status", line: "True" },
-        { label: "Error Type", value: testDetails.errorType, key: "errorType", line: "False" },
+        { label: "Error Type", value: testDetails.errorType, key: "errorType", line: "True" },
     ];
-    if (testDetails.errorType == "RESULTS NOT THE SAME" || testDetails.errorType == "Known, intended bevaviour that does not comply with SPARQL standard") {
-        overviewEntries.push({ label: "Expected Query Result", value: testDetails.expectedHtml, key: "expectedHtml", line: "False" });
-        overviewEntries.push({ label: "Query Result", value: testDetails.gotHtml, key: "gotHtml", line: "False" });
+    if (testDetails.errorType == "RESULTS NOT THE SAME" || testDetails.errorType.includes("Known")) {
+        overviewEntries.push({ label: "Expected Query Result", value: [testDetails.expectedHtml, testDetails.expectedHtmlRed], key: "expectedHtml", line: "False" });
+        overviewEntries.push({ label: "Query Result", value: [testDetails.gotHtml, testDetails.gotHtmlRed], key: "gotHtml", line: "False" });
+        overviewEntries.push({ label: "Index File", value: escapeHtml(testDetails.graphFile), key: "graphFile", line: "False" });
+        overviewEntries.push({ label: "Query File", value: escapeHtml(testDetails.queryFile), key: "queryFile", line: "False"  });
     }
     if (testDetails.errorType == "QUERY EXCEPTION") {
-        overviewEntries.push({ label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False" });
+        overviewEntries.push({ label: "Query File", value: escapeHtml(testDetails.queryFile), key: "queryFile", line: "False" });
         overviewEntries.push({ label: "Query Log", value: testDetails.queryLog, key: "queryLog", line: "False"  });
+    }
+    if (testDetails.errorType == "REQUEST ERROR") {
+        overviewEntries.push({ label: "Query File", value: escapeHtml(testDetails.queryFile), key: "queryFile", line: "False" });
+        overviewEntries.push({ label: "Query Log", value: testDetails.queryLog, key: "queryLog", line: "False"  });
+    }
+    if (testDetails.errorType == "EXPECTED: QUERY EXCEPTION ERROR") {
+        overviewEntries.push({ label: "Query File", value: escapeHtml(testDetails.queryFile), key: "queryFile", line: "False" });
+        overviewEntries.push({ label: "Query Log", value: testDetails.queryLog, key: "queryLog", line: "False"  });
+    }
+    if (testDetails.errorType == "Undefined error") {
+        overviewEntries.push({ label: "Query File", value: escapeHtml(testDetails.queryFile), key: "queryFile", line: "False" });
+        overviewEntries.push({ label: "Query Log", value: testDetails.queryLog, key: "queryLog", line: "False"  });
+    }
+    if (testDetails.errorType == "INDEX BUILD ERROR") {
+        overviewEntries.push({ label: "Index File", value: escapeHtml(testDetails.graphFile), key: "graphFile", line: "False"   });
+        overviewEntries.push({ label: "Index Build Log", value: testDetails.indexLog, key: "indexLog", line: "False"  });
+    }
+    if (testDetails.errorType == "SERVER ERROR") {
+        overviewEntries.push({ label: "Server Status", value: testDetails.serverStatus, key: "serverStatus", line: "True" });
+        overviewEntries.push({ label: "Server Log", value: testDetails.serverLog, key: "serverLog", line: "False" });
     }
 
     var allEntries = [
-        { label: "Test Type", value: testDetails.Type, key: "Type", line: "True" },
-        { label: "Test Feature", value: testDetails.Feature, key: "Feature", line: "True" },
+        { label: "Index File", value: escapeHtml(testDetails.graphFile), key: "graphFile", line: "False"  },
+        { label: "Index Build Log", value: testDetails.indexLog, key: "indexLog", line: "False"  },
+        { label: "Query File", value: escapeHtml(testDetails.queryFile), key: "queryFile", line: "False"  },
+        { label: "Query Sent", value: escapeHtml(testDetails.querySent), key: "querySent", line: "False"  },
+        { label: "Query Log", value: testDetails.queryLog, key: "queryLog", line: "False"  },
+        { label: "Server Status", value: testDetails.serverStatus, key: "serverStatus", line: "True" },
+        { label: "Server Log", value: testDetails.serverLog, key: "serverLog", line: "False" },
+        { label: "Expected Query Result",value: [testDetails.expectedHtml, testDetails.expectedHtmlRed], key: "expectedHtml", line: "False" },
+        { label: "Query Result", value: [testDetails.gotHtml, testDetails.gotHtmlRed], key: "gotHtml", line: "False" },
         { label: "Query Filename", value: testDetails.query, key: "query", line: "True"  },
         { label: "Index Filename", value: testDetails.graph, key: "graph", line: "True" },
-        { label: "Index File", value: testDetails.graphFile, key: "graphFile", line: "False"  },
-        { label: "Index Build Log", value: testDetails.indexLog, key: "indexLog", line: "False"  },
-        { label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False"  },
-        { label: "Query Sent", value: testDetails.querySent, key: "querySent", line: "False"  },
-        { label: "Query Log", value: testDetails.queryLog, key: "queryLog", line: "False"  },
         { label: "Result Filename", value: testDetails.result, key: "result", line: "True"  },
-        { label: "Result File", value: testDetails.resultFile.replace(/</g, "&lt;").replace(/>/g, "&gt;"), key: "resultFile", line: "False" },
-        { label: "Expected Query Result", value: testDetails.expectedHtml, key: "expectedHtml", line: "False" },
-        { label: "Query Result", value: testDetails.gotHtml, key: "gotHtml", line: "False" }
+        { label: "Result File", value: escapeHtml(testDetails.resultFile), key: "resultFile", line: "False" },
+        { label: "Test Type", value: testDetails.type, key: "type", line: "True" },
+        { label: "Test Feature", value: testDetails.feature, key: "feature", line: "True" },
+        { label: "Approval", value: testDetails.approval, key: "approval", line: "True" },
+        { label: "Approved by", value: testDetails.approvedBy, key: "approvedBy", line: "True" },
     ];
 
     if (selectedRun2 == -1){
@@ -272,6 +380,10 @@ function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2){
     }
 }
 
+function escapeHtml(html) {
+    return html.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+}
+
 function replaceEntries(entries, testDetails){
     entries.forEach(function(entry) {
         entry.value = testDetails[entry.key + "-run2"];
@@ -286,7 +398,12 @@ function buildHTML(entries, id){
         if (entry.line == "True"){
             element.innerHTML += createSingleLineElement(entry.label, entry.value)
         } else {
-            element.innerHTML += createElement(entry.label, entry.value)
+            if (Array.isArray(entry.value)) {
+                element.innerHTML += createElement(entry.label, entry.value[0], entry.value[1])
+            }
+            else {
+                element.innerHTML += createElement(entry.label, entry.value, "")
+            }
         }
     });
 }
@@ -308,12 +425,14 @@ function compare(dict1, dict2) {
 function showCorrectElement(currentTestName, selectedRun2){
     $("#nothing").addClass("visually-hidden");
     $("#buttons").addClass("visually-hidden");
+    $("#toggles").addClass("visually-hidden");
     $("#compare").addClass("visually-hidden");
     $("#single").addClass("visually-hidden");
     if (currentTestName == -1) {
         $("#nothing").removeClass("visually-hidden");
     } else {
         $("#buttons").removeClass("visually-hidden");
+        $("#toggles").removeClass("visually-hidden");
         if (selectedRun2 == -1) {
             $("#single").removeClass("visually-hidden");
         } else {
@@ -329,14 +448,20 @@ function createSingleLineElement(heading, text){
     return html += '</div>';
 }
 
-function createElement(heading, text){
+function createElement(heading, text, text2){
+    var className = ""
+    if (text2 != ""){
+        className = "normalText"
+    }
     var id = Math.random().toString(36).slice(2, 11);
     var html = `<div class="row container-info">`;
-        html += `<div class="col heading"><strong>${heading}:</strong></div>`;
-        html += `<div class="col button"><div class="button-show btn-group-sm" role="group" aria-label="Basic example">`;
-        html += `<button id="${id}" type="button" class="button-toggle btn btn-primary">Show/Hide</button></div></div>`;
-        html += `<div class="row"><div id="div-${id}" class="col results-wrapper visually-hidden"><pre>${text}</pre></div></div>`;
-    return html += `</div>`;
+        html += `<div class="col"><strong>${heading}:</strong></div>`;
+        html += `<div class="col button">`;
+        html += `<button id="${id}" type="button" class="button-toggle btn btn-sm btn-secondary">Expand/Collapse</button></div></div>`;
+        html += `<div class="row"><div id="div-${id}" class="col results-wrapper results-wrapper-big visually-hidden"><pre class="${className}">${text}</pre>`;
+        html += `<pre class="redText visually-hidden">${text2}</pre>`;
+        html += `</div></div>`;
+    return html;
 }
 
 function addIfNotPresent(array, item) {
@@ -416,15 +541,21 @@ function filterTable(value, jsonArray){
     return searchTable(value, filteredArray);
 }
 
-function searchTable(value, currentArray){
+function searchTable(value, currentArray) {
+    // Keyword search, match if all keywords are found within a item of currentArray
     var searchedArray = [];
-    value = value.toLowerCase();
+    var keywords = value.toLowerCase().split(',');
+
     currentArray.forEach(function(test) {
-        if (test.name.toLowerCase().includes(value) || 
-        test.status.toLowerCase().includes(value)||
-         test.errorType.toLowerCase().includes(value)|| 
-         test.typeName.toLowerCase().includes(value)|| 
-         test.group.toLowerCase() == value.toLowerCase()){
+        // Check that every keyword matches at least one property of 'test'
+        var matchesAllKeywords = keywords.every(function(keyword) {
+            return test.name.toLowerCase().includes(keyword) ||
+                   test.status.toLowerCase().includes(keyword) ||
+                   test.errorType.toLowerCase().includes(keyword) ||
+                   test.typeName.toLowerCase().includes(keyword) ||
+                   test.group.toLowerCase() == keyword;
+        });
+        if (matchesAllKeywords) {
             searchedArray.push(test);
         }
     });

@@ -9,7 +9,6 @@ import json
 import re
 import xml.etree.ElementTree as ET
 from io import StringIO
-from xml.sax.saxutils import escape
 
 class TestSuite:
     """
@@ -18,9 +17,19 @@ class TestSuite:
     Attributes:
         name (str): Name of the current run.
         path_to_binaries (str): Path to QLever binaries.
+        path_to_testsuite (str): Path to the SPARQL test suite files.
+        path_to_config (str): Path to the config file.
+        file_name_for_tests (str): File name for the list of tests extracted from the test suite.
+        command_index (str): Command used to index the graph with QLever.
+        command_remove_index (str): Command used to remove the current index.
+        command_start_server (str): Command used to start the Qlever server.
+        command_stop_server (str): Command used to stop the Qlever server.
+        server_address (str): Address of the QLever server ex. localhost.
+        port (str): Port used for the QLever server.
         alias (dict): QLever specific datatypes ex. int = integer. Read from config.
         map_bnodes (dict): Dict to check if blank nodes are correct for every test.
         number_types (list): List with all types that are considered numbers. Read from config.
+        directories (list): Contains all directories that will be considered when extracting tests.
         test_data (dict): Dictionary to store/log all the test data.
         tests_of_graph (dict): Dictionary grouping all tests using the same graph.
         tests (int): Total number of tests.
@@ -30,19 +39,28 @@ class TestSuite:
         self.path_to_test_suite (str): Path to the SPARQL Testsuite directory. Read from config.
     """
 
-    def __init__(self, path: str, name: str):
+    def __init__(self, name: str):
         """
         Constructs all the necessary attributes for the TestSuite object.
 
         Parameters:
-            path (str): Path to QLever binaries.
             name (str): Name of the current run.
         """
         self.name = name
-        self.path_to_binaries = path
+        self.path_to_binaries = ""
+        self.path_to_testsuite = ""
+        self.path_to_config = "./config.json"
+        self.file_name_for_tests = ""
+        self.command_index = ""
+        self.command_start_server = ""
+        self.command_stop_server = ""
+        self.command_remove_index = ""
+        self.server_address = ""
+        self.port = ""
         self.alias = {}
         self.map_bnodes = {}
         self.number_types = []
+        self.directories = []
         self.test_data = {}
         self.tests_of_graph = {}
         self.tests = 0
@@ -51,65 +69,88 @@ class TestSuite:
         self.passed_failed = 0
         self.path_to_test_suite = ""
 
-    def initialize_tests(self, file: str):
+    def initialize_tests(self):
         """
         Initialize tests from a specified CSV file.
 
         Reads the CSV file and processes each row.
 
-        Parameters:
-            file (str): Path to the CSV file containing test definitions.
         """
-        if not os.path.exists(file):
-            print(f"{file} does not exist!")
+        if not os.path.exists(self.file_name_for_tests):
+            print(f"{self.file_name_for_tests} does not exist!")
             return
 
-        with open(file, "r", newline="") as csv_file:
+        with open(self.file_name_for_tests, "r", newline="") as csv_file:
             csv_reader = csv.reader(csv_file)
             for row in csv_reader:
                 self.process_row(row)
 
-    def initialize_config(self):
+    def create_config(self, server_address: str, port: str, path_to_testsuite: str, path_to_binaries: str, file_name_for_tests: str) -> bool:
+        """
+        Create the config file.
+        """
+        if not os.path.exists(path_to_testsuite):
+            print(f"{path_to_testsuite} does not exist!")
+            return False
+        if not os.path.exists(path_to_binaries):
+            print(f"{path_to_binaries} does not exist!")
+            return False
+        directories = [directory for directory in os.listdir(path_to_testsuite) if os.path.isdir(os.path.join(path_to_testsuite, directory))]
+        config = {
+        "command_index": f"{path_to_binaries}IndexBuilderMain -F ttl -s TestSuite.settings.json -i TestSuite -f ",
+        "command_start_server": f"{path_to_binaries}ServerMain -i TestSuite -j 8 -p {port} > TestSuite.server-log.txt",
+        "command_stop_server": f"pkill -f '{path_to_binaries}ServerMain -i [^ ]*TestSuite'",
+        "command_remove_index": "rm -f TestSuite.index.* TestSuite.vocabulary.* TestSuite.prefixes TestSuite.meta-data.json TestSuite.index-log.txt",
+        "server_address": server_address,
+        "port": port,
+        "path_to_testsuite": path_to_testsuite,
+        "path_to_binaries": path_to_binaries,
+        "file_name_for_tests": file_name_for_tests,
+        "directories": directories,
+        "alias": {            
+                "http://www.w3.org/2001/XMLSchema#integer": "http://www.w3.org/2001/XMLSchema#int",
+                "http://www.w3.org/2001/XMLSchema#double": "http://www.w3.org/2001/XMLSchema#decimal",
+                "http://www.w3.org/2001/XMLSchema#int": "http://www.w3.org/2001/XMLSchema#integer",
+                "http://www.w3.org/2001/XMLSchema#decimal": "http://www.w3.org/2001/XMLSchema#double",
+                "http://www.w3.org/2001/XMLSchema#string": None
+                },
+        "number_types": [
+                        "http://www.w3.org/2001/XMLSchema#integer",
+                        "http://www.w3.org/2001/XMLSchema#double",
+                        "http://www.w3.org/2001/XMLSchema#decimal",
+                        "http://www.w3.org/2001/XMLSchema#float",
+                        "http://www.w3.org/2001/XMLSchema#int",
+                        "http://www.w3.org/2001/XMLSchema#decimal"
+                        ]
+            }
+        with open(self.path_to_config, "w") as file:
+                json.dump(config, file, indent=4)
+        return True
+
+    def initialize_config(self) -> bool:
         """
         Initialize config file.
-
-        Check if config exists and initialize content:
-          if not: create basic config file
         """
-        path_to_config = "./config.json"
-        if not os.path.exists(path_to_config):
-            print(f"{path_to_config} does not exist!")
-            print(f"Create basic {path_to_config}")
-            config = {
-                    "path_to_testsuite": "./testsuite/",
-                    "alias": {            
-                            "http://www.w3.org/2001/XMLSchema#integer": "http://www.w3.org/2001/XMLSchema#int",
-                            "http://www.w3.org/2001/XMLSchema#double": "http://www.w3.org/2001/XMLSchema#decimal",
-                            "http://www.w3.org/2001/XMLSchema#int": "http://www.w3.org/2001/XMLSchema#integer",
-                            "http://www.w3.org/2001/XMLSchema#decimal": "http://www.w3.org/2001/XMLSchema#double",
-                            "http://www.w3.org/2001/XMLSchema#string": None
-                            },
-                    "number_types": [
-                                    "http://www.w3.org/2001/XMLSchema#integer",
-                                    "http://www.w3.org/2001/XMLSchema#double",
-                                    "http://www.w3.org/2001/XMLSchema#decimal",
-                                    "http://www.w3.org/2001/XMLSchema#float",
-                                    "http://www.w3.org/2001/XMLSchema#int",
-                                    "http://www.w3.org/2001/XMLSchema#decimal"
-                                    ]
-                      }
-            self.alias = config["alias"]
-            self.number_types = config["number_types"]
-            self.path_to_test_suite = config["path_to_testsuite"]
-            with open(path_to_config, "w") as file:
-                    json.dump(config, file, indent=4)
-            return
+        if not os.path.exists(self.path_to_config):
+            print(f"Can not find {self.path_to_config}")
+            print("Use 'python3 testsuite.py config ...' to create config!")
+            return False
         
-        with open(path_to_config, "r") as file:
+        with open(self.path_to_config, "r") as file:
             config = json.load(file)
             self.alias = config["alias"]
             self.number_types = config["number_types"]
             self.path_to_test_suite = config["path_to_testsuite"]
+            self.path_to_binaries = config["path_to_binaries"]
+            self.file_name_for_tests = config["file_name_for_tests"]
+            self.command_index = config["command_index"]
+            self.command_start_server = config["command_start_server"]
+            self.command_stop_server = config["command_stop_server"]
+            self.command_remove_index = config["command_remove_index"]
+            self.server_address = config["server_address"]
+            self.port = config["port"]
+            self.directories = config["directories"]
+            return True
 
     def process_row(self, row: list):
         """
@@ -197,9 +238,13 @@ class TestSuite:
             "errorType": "",
             "expectedHtml": "",
             "gotHtml": "",
+            "expectedHtmlRed": "",
+            "gotHtmlRed": "",
             "indexLog": "",
             "serverLog": "",
             "serverStatus": "",
+            "queryResult": "",
+            "queryAnswer": "",
             "queryLog": "",
             "querySent": "",
             "updateGraph": row[15] if len(row) > 15 else "",
@@ -243,11 +288,11 @@ class TestSuite:
             Exception: If any exception occurs during the indexing process it is caught and an error message is returned.
         """
         try:
-            cmd = f"ulimit -Sn 1048576; cat {graph_path} | {self.path_to_binaries}/IndexBuilderMain -F ttl -f - -i TestSuite -s TestSuite.settings.json | tee TestSuite.index-log.txt"
+            cmd = f"{self.command_index}{graph_path}"
             process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             output, error = process.communicate()
             if process.returncode != 0:
-                return f"Indexing error: {error.decode('utf-8')}"
+                return f"Indexing error: {error.decode('utf-8')} {output.decode('utf-8')}"
             return output.decode("utf-8")
         except Exception as e:
             return f"Exception during indexing: {str(e)}"
@@ -260,7 +305,7 @@ class TestSuite:
             subprocess.CalledProcessError: If an error occurs during the file deletion process.
         """
         try:
-            subprocess.check_call("rm -f TestSuite.index.* TestSuite.vocabulary.* TestSuite.prefixes TestSuite.meta-data.json TestSuite.index-log.txt", shell=True)
+            subprocess.check_call(self.command_remove_index, shell=True)
         except subprocess.CalledProcessError as e:
             print(f"Error removing index files: {e}")
 
@@ -276,12 +321,11 @@ class TestSuite:
             Exception: If any exception occurs during the server startup process.
         """
         try:
-            cmd = f"{self.path_to_binaries}/ServerMain -i TestSuite -j 8 -p 7001 -m 4 -c 2 -e 1 -k 100 -a 'TestSuite_3139118704' > TestSuite.server-log.txt &"
+            cmd = self.command_start_server
             subprocess.Popen(cmd, shell=True)
-
             return self.wait_for_server_startup()
         except Exception as e:
-            return (500, f"Exception during server start: {str(e)}")
+            return (500, f"Exception during server start: {str(e)}", "")
 
     def wait_for_server_startup(self):
         """
@@ -295,7 +339,7 @@ class TestSuite:
         """
         max_retries = 8
         retry_interval = 0.25
-        url = "http://mint-work:7001"
+        url = self.server_address + ":" + self.port
         headers = {"Content-type": "application/sparql-query"}
         test_query = "SELECT ?s ?p ?o { ?s ?p ?o } LIMIT 1"
 
@@ -310,7 +354,7 @@ class TestSuite:
 
         return (500, "Server failed to start within expected time")
 
-    def stop_server(self):
+    def stop_server(self) -> str:
         """
         Stops the SPARQL server.
 
@@ -318,7 +362,7 @@ class TestSuite:
             subprocess.CalledProcessError: If an error occurs while stopping the server.
         """
         try:
-            subprocess.check_call(f"pkill -f '{self.path_to_binaries}/ServerMain -i [^ ]*TestSuite'", shell=True)
+            subprocess.check_call(self.command_stop_server, shell=True)
         except subprocess.CalledProcessError as e:
             print(f"Error stopping server: {e}")
 
@@ -343,15 +387,64 @@ class TestSuite:
             content_type = "text/tab-separated-values"
         elif result_format == "srx":
             content_type = "application/sparql-results+xml"
+        elif result_format == "ttl":
+            return (400, "Query execution error: Query result format ttl not supported!")
 
-        url = "http://mint-work:7001"
+        url = self.server_address + ":" + self.port
         headers = {"Accept": content_type, "Content-type": "application/sparql-query; charset=utf-8"}
-
         try:
             response = requests.post(url, headers=headers, data=query.encode("utf-8"))
-            return (response.status_code, response.text)
+            return (response.status_code, response.content.decode("utf-8"))
         except requests.exceptions.RequestException as e:
             return (500, f"Query execution error: {str(e)}")
+
+    def escape(self, str: str) -> str:
+        """
+        Takes any string and returns the escaped version to use in html.
+
+        Parameters:
+            str (str): The  string containing <, > etc.
+
+        Returns:
+            str: Escaped version of the input.
+        """
+        return str.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('\"', "&quot;").replace("'", "&apos;")
+
+    def replace_self_closing_tag(self, xml: str) -> str:
+        """
+        Takes any xml string and replaces all self-closing xml tags (<abc/>) with open and close tags (<abc></abc>).
+        The regular expression \w+ matches one or more word characters which is then used in the replacement pattern
+        where \1 refers to the content of the first capture group.
+        Parameters:
+            xml (str): The  string containing self-closing xml tags.
+
+        Returns:
+            str: xml string without self-closing xml tags
+        """
+        pattern = r"<(\w+)/>"
+        replacement = r"<\1></\1>"
+        return re.sub(pattern, replacement, xml)
+
+    def highlight_first_occurrence(self, original: str, string_part: str, label) -> str:
+        """
+        Highlights the first occurrence of string_part in original by wrapping it with a <label class="red"> tag.
+        Ensures that if string_part occurs multiple times it does not get double-wrapped.
+        Parameters:
+            original (str): Any string
+            string_part (str): A string which might be a part of original
+
+        Returns:
+            str: The original string with the string_part highlighted if found
+        """
+        string_part_escaped = re.escape(string_part)
+        # This stops double-wrapping look for first occurrence without a label 
+        pattern = rf"{string_part_escaped}(?!</label>)"
+
+        def replace_first_match(match):
+            return f'<label class="{label}">{match.group()}</label>'
+        original_highlighted = re.sub(pattern, replace_first_match, original, count=1)
+
+        return original_highlighted
 
     def element_to_string(self, element: ET.Element, escaped_xml: str, label: str):
         """
@@ -360,18 +453,23 @@ class TestSuite:
         Parameters:
             original_xml (str): The original XML string to be processed.
             remaining_tree (ET.ElementTree): An ElementTree object representing the XML elements to be highlighted.
-            red_tree: ET.ElementTree (ET.ElementTree): An ElemenTree object representing the XML elements to RED otherwise yellow.
+            red_tree: ET.ElementTree (ET.ElementTree): An ElementTree object representing the XML elements to RED otherwise yellow.
 
         Returns:
             str: An HTML-escaped XML string with specific elements highlighted.
         """      
-        element_str = ET.tostring(element).decode("utf8").replace(" />", "/>")
+        element_str = ET.tostring(element, encoding="utf-8").decode("utf-8").replace(" />", "/>")
         element_str = element_str.replace("ns0:", "")
-
-        escaped_element_str = escape(element_str)
+        escaped_element_str = self.escape(element_str).rstrip()
         if escaped_element_str in escaped_xml:
-            return escaped_xml.replace(escaped_element_str, f'</label><label class="{label}">{escaped_element_str}</label><label class="normal">')
+            return self.highlight_first_occurrence(escaped_xml, escaped_element_str, label)
+        elif escaped_element_str.replace('&quot;', "&apos;") in escaped_xml:
+            return self.highlight_first_occurrence(escaped_xml, escaped_element_str.replace('&quot;', "&apos;"), label)
         else:
+            element_str = self.replace_self_closing_tag(element_str)
+            escaped_element_str = self.escape(element_str).rstrip()
+            if escaped_element_str in escaped_xml:
+                return self.highlight_first_occurrence(escaped_xml, escaped_element_str, label)
             return escaped_xml
 
     def generate_highlighted_string_xml(self, original_xml: str, remaining_tree: ET.ElementTree, red_tree: ET.ElementTree) -> str:
@@ -389,17 +487,20 @@ class TestSuite:
         Returns:
             str: An HTML-escaped XML string with specific elements highlighted.
         """
-        escaped_xml = escape(original_xml)
-
-        for element in remaining_tree.getroot().findall('.//head'):
+        escaped_xml = self.escape(original_xml)
+        
+        for element in remaining_tree.getroot().findall('.//head/variable'):
             escaped_xml = self.element_to_string(element, escaped_xml, "red")
+        
+        bool_element = remaining_tree.getroot().find(".//boolean")
+        if bool_element is not None:
+            escaped_xml = self.element_to_string(bool_element, escaped_xml, "red")
+
 
         for element in remaining_tree.getroot().findall('.//result'):
             label = "yellow"
             for elem in red_tree.getroot().findall('.//result'):
-                if (elem.tag == element.tag and 
-                    elem.attrib == element.attrib and 
-                    elem.text == element.text):
+                if self.xml_elements_equal(element, elem, True):
                     label = "red"
             escaped_xml = self.element_to_string(element, escaped_xml, label)
 
@@ -430,12 +531,20 @@ class TestSuite:
             remaining_tree2 (ET.ElementTree): representing the XML elements to be highlighted for the second XML string.
 
         Returns:
-            tuple: A tuple containing two HTML-escaped and highlighted XML strings.
+            tuple: A tuple containing four HTML-escaped and highlighted XML strings.
         """
-        highlighted_xml1 = f'<label class="normal">{self.generate_highlighted_string_xml(xml1, self.strip_namespace(remaining_tree1), self.strip_namespace(red_tree1))}</label>'
-        highlighted_xml2 = f'<label class="normal">{self.generate_highlighted_string_xml(xml2, self.strip_namespace(remaining_tree2), self.strip_namespace(red_tree2))}</label>'
+        self.strip_namespace(red_tree1)
+        self.strip_namespace(red_tree2)
+        self.strip_namespace(remaining_tree1)
+        self.strip_namespace(remaining_tree2)
+        remaining_tree1_string = ET.tostring(remaining_tree1.getroot(), encoding='utf-8').decode("utf-8").replace(" />", "/>").replace("ns0:", "")
+        remaining_tree2_string = ET.tostring(remaining_tree2.getroot(), encoding='utf-8').decode("utf-8").replace(" />", "/>").replace("ns0:", "")
+        highlighted_xml1 = self.generate_highlighted_string_xml(xml1, remaining_tree1, red_tree1)
+        highlighted_xml2 = self.generate_highlighted_string_xml(xml2, remaining_tree2, red_tree2)
+        highlighted_xml1_only_red = self.generate_highlighted_string_xml(remaining_tree1_string, remaining_tree1, red_tree1)
+        highlighted_xml2_only_red = self.generate_highlighted_string_xml(remaining_tree2_string, remaining_tree2, red_tree2)
 
-        return highlighted_xml1, highlighted_xml2
+        return highlighted_xml1, highlighted_xml2, highlighted_xml1_only_red, highlighted_xml2_only_red
 
     def xml_elements_equal(self, element1: ET.Element, element2: ET.Element, compare_with_intended_behaviour: bool) -> bool:
         """
@@ -448,6 +557,8 @@ class TestSuite:
         Returns:
             bool: True if elements are considered equal and if not False.
         """
+        if len(list(element1)) != len(list(element2)): return False
+
         is_number = False
         if element1.tag != element2.tag:
             if (self.alias.get(element1.tag) != element2.tag and self.alias.get(element2.tag) != element1.tag) or not compare_with_intended_behaviour: 
@@ -456,13 +567,21 @@ class TestSuite:
         if element1.attrib != element2.attrib: 
             if isinstance(element1.attrib, dict) != isinstance(element2.attrib, dict): return False
             if not isinstance(element1.attrib, dict) and (self.alias.get(element1.attrib) != element2.attrib and self.alias.get(element2.attrib) != element1.attrib) or not compare_with_intended_behaviour: return False
-            if isinstance(element1.attrib, dict) and (self.alias.get(element1.attrib.get("datatype")) != element2.get("datatype") and self.alias.get(element2.attrib.get("datatype")) != element1.attrib.get("datatype")) or not compare_with_intended_behaviour: return False
+            if isinstance(element1.attrib, dict):
+                if element1.attrib.get("datatype") is None and element2.attrib.get("datatype") is None:
+                    return False
+                else:
+                    if (self.alias.get(element1.attrib.get("datatype")) != element2.attrib.get("datatype") and self.alias.get(element2.attrib.get("datatype")) != element1.attrib.get("datatype")) or not compare_with_intended_behaviour: return False
         
         if (element1.attrib.get("datatype") in self.number_types) != (element2.attrib.get("datatype") in self.number_types): return False
 
         if element1.attrib.get("datatype") in self.number_types and element2.attrib.get("datatype") in self.number_types:
             is_number = True
-    
+
+        if element1.tail != element2.tail:
+            if ((isinstance(element1.tail, str) and element2.tail is None and not element1.tail.strip() == "") and (isinstance(element2.tail, str) and element1.tail is None and not element2.tail.strip() == "")) or (isinstance(element1.tail, str) and isinstance(element2.tail, str) and element1.tail.strip() != element2.tail.strip()):
+                return False
+
         if element1.text != element2.text:
             if element1.tag == "{http://www.w3.org/2005/sparql-results#}bnode":
                 if element1.text not in self.map_bnodes and element2.text not in self.map_bnodes:
@@ -479,6 +598,7 @@ class TestSuite:
             if is_number:
                 if float(element1.text) == float(element2.text): return all(self.xml_elements_equal(c1, c2, compare_with_intended_behaviour) for c1, c2 in zip(element1, element2))
             if (self.alias.get(element1.text) != element2.text and self.alias.get(element2.text) != element1.text) or not compare_with_intended_behaviour: return False
+        
         return all(self.xml_elements_equal(c1, c2, compare_with_intended_behaviour) for c1, c2 in zip(element1, element2))
 
     def xml_remove_equal_elements(self, parent1: ET.Element, parent2: ET.Element, use_config: bool):
@@ -527,13 +647,20 @@ class TestSuite:
         if head1 is not None and head2 is not None:
             self.xml_remove_equal_elements(head1, head2, False)
 
+        # Compare and remove equal <boolean>
+        bool1 = expected_tree.find(".//{http://www.w3.org/2005/sparql-results#}boolean")
+        bool2 = query_tree.find(".//{http://www.w3.org/2005/sparql-results#}boolean")
+        if bool1 is not None and bool2 is not None:
+            if str(bool1.text) == str(bool2.text):
+                expected_tree.getroot().remove(bool1)
+                query_tree.getroot().remove(bool2)
+
         # Compare and remove equal <result> elements in <results>
         results1 = expected_tree.find(".//{http://www.w3.org/2005/sparql-results#}results")
         results2 = query_tree.find(".//{http://www.w3.org/2005/sparql-results#}results")
         
         if results1 is not None and results2 is not None:
             self.xml_remove_equal_elements(results1, results2, False)
-
         # Copy expected_tree
         expected_tree_string = ET.tostring(expected_tree.getroot())
         copied_expected_tree = ET.ElementTree(ET.fromstring(expected_tree_string))
@@ -541,21 +668,20 @@ class TestSuite:
         # Copy query_tree
         query_tree_string = ET.tostring(query_tree.getroot())
         copied_query_tree = ET.ElementTree(ET.fromstring(query_tree_string))
-
-        if len(list(results1)) == 0 and len(list(results2)) == 0 and len(list(head1)) == 0 and len(list(head2)):
+        if (results1 is not None and results2 is not None and len(list(results1)) == 0 and len(list(results2)) == 0 and len(list(head1)) == 0 and len(list(head2)) == 0) or (results1 is None and results2 is None and head1 is None and head2 is None and bool1 is None and bool2 is None):
             status = "Passed"
             error_type = ""
         else:
             if results1 is not None and results2 is not None:
                 self.xml_remove_equal_elements(results1, results2, True)
         
-            if len(list(results1)) == 0 and len(list(results1)) == 0:
-                status = "Failed: Intended behaviour"
-                error_type = "Known, intended behaviour that does not comply with SPARQL standard"
+                if len(list(results1)) == 0 and len(list(results2)) == 0:
+                    status = "Failed: Intended behaviour"
+                    error_type = "Known, intended behaviour that does not comply with SPARQL standard"
         
-        expected_string, query_string = self.generate_html_for_xml(expected_xml, query_xml,copied_expected_tree, copied_query_tree, expected_tree, query_tree)
+        expected_string, query_string, expected_string_red, query_string_red = self.generate_html_for_xml(expected_xml, query_xml, copied_expected_tree, copied_query_tree, expected_tree, query_tree)
         test_name = test[2]
-        self.test_data[test_name].update({"expectedHtml": expected_string, "gotHtml": query_string})
+        self.test_data[test_name].update({"expectedHtml": expected_string, "gotHtml": query_string, "expectedHtmlRed": expected_string_red, "gotHtmlRed": query_string_red})
 
         return status, error_type
 
@@ -577,6 +703,7 @@ class TestSuite:
         Returns:
             str: An HTML-formatted string representing the bindings list with highlighted items.
         """
+        mark_red_copy = list(mark_red)
         parts = ["["]
         for i, binding in enumerate(bindings):
             if i > 0:
@@ -585,11 +712,11 @@ class TestSuite:
             
             # Apply label if the binding matches any in the reference bindings
             if binding in remaining_bindings:
-                if binding in mark_red:
-                    label = '</label><label class="red">'
+                if binding in mark_red_copy:
+                    label = '<label class="red">'
                 else:
-                    label = '</label><label class="yellow">'
-                end_label = '</label><label class="normal">'
+                    label = '<label class="yellow">'
+                end_label = '</label>'
             else:
                 label = ""
                 end_label = ""
@@ -620,7 +747,6 @@ class TestSuite:
             if i > 0:
                 parts.append(", ")
             parts.append("\n" + " " * (indent * (level + 1)))
-
             if isinstance(value, list) and key == "vars":
                 # Special handling for "vars" in "head"
                 parts.append(f"\"{key}\": {self.json_to_string(value, remaining_dict.get(key, []),mark_red, level + 1)}")
@@ -628,25 +754,32 @@ class TestSuite:
                 # Special handling for "bindings" in "results"
                 formatted_bindings = self.handle_bindings(indent, level, value, remaining_dict.get(key, []), mark_red)
                 parts.append(f"\"{key}\": {formatted_bindings}")
+            elif key == "boolean":
+                # Special handling for "boolean" in "results"
+                label = ""
+                end_label = ""
+                if remaining_dict.get("boolean") is not None:
+                    label = '<label class="red">'
+                    end_label = '</label>'
+                parts.append(f"\"{key}\": {label}{str(value).lower()}{end_label}")
             else:
                 parts.append(f"\"{key}\": {self.json_to_string(value, remaining_dict.get(key, {}), mark_red, level + 1)}")
         
         parts.append("\n" + " " * (indent * level) + "}")
         return "".join(parts)
 
-    def json_list(self, indent: int, level: int, json_list: list, remaining_list: list, mark_red: list) -> str:
+    def json_list(self, indent: int, level: int, json_list: list, remaining_list: list) -> str:
         """
         Formats a list with HTML labels as needed for highlighting.
 
         Iterates through the list and applies HTML labels to items that match
-        any in the reference list. Manages indentation for a readable format.
+        any in the list. Manages indentation for a readable format.
 
         Parameters:
             indent (int): Number of spaces used for indentation.
             level (int): Current nesting level for correct indentation.
             json_list (list): List of items to format.
             remaining_list (list): List used for comparison to determine highlighting.
-            mark_red (list): List containing the elements that must be highlighted red.
 
         Returns:
             str: An HTML-formatted string representing the list with highlighted elements.
@@ -656,13 +789,10 @@ class TestSuite:
             if i > 0:
                 parts.append(", ")
             parts.append("\n" + " " * (indent * (level + 1)))
-            # Apply label if the item is in the reference list
+            # Apply label if the item is in the list
             if item in remaining_list:
-                if item in mark_red:
-                    label = '</label><label class="red">'
-                else:
-                    label = '</label><label class="yellow>"'
-                end_label = '</label><label class="normal">'
+                label = '<label class="red">'
+                end_label = '</label>'
             else:
                 label = ""
                 end_label = ""
@@ -684,10 +814,10 @@ class TestSuite:
         str: A readable string representation of the JSON object with highlighted elements.
         """
         indent=4
-        if isinstance(json_obj, dict):
+        if isinstance(json_obj, dict) and json_obj:
             return self.json_dict(indent, level, json_obj, remaining_json, mark_red)
         elif isinstance(json_obj, list):
-            return self.json_list(indent, level, json_obj, remaining_json, mark_red)
+            return self.json_list(indent, level, json_obj, remaining_json)
         elif isinstance(json_obj, str):
             return f"\"{json_obj}\""
         else:
@@ -705,7 +835,7 @@ class TestSuite:
         Returns:
             str: An HTML string representing the formatted and highlighted JSON object.
         """
-        return f'<label class="normal">{self.json_to_string(json_obj, remaining_json, mark_red)}</label>'
+        return self.json_to_string(json_obj, remaining_json, mark_red)
 
     def json_elements_equal(self, element1: dict, element2: dict, compare_with_intended_behaviour: bool) -> bool:
         """
@@ -750,6 +880,18 @@ class TestSuite:
                     return False
         return True
 
+    def remove_once_found(self, list1, list2, compare_with_intended_behaviour):
+        temp_list1 = list1[:]
+        
+        for item2 in list2:
+            for i, item1 in enumerate(temp_list1):
+                if self.json_elements_equal(item1, item2, compare_with_intended_behaviour):
+                    # Remove the first found match and break the loop to move to the next b2
+                    temp_list1.pop(i)
+                    break
+        
+        return temp_list1
+
     def compare_json(self, test: tuple, expected_json: str, query_json: str) -> tuple:
         """
         Compares two JSON objects and identifies differences in their "head" and "results" sections.
@@ -772,39 +914,67 @@ class TestSuite:
         expected = json.loads(expected_json)
         query = json.loads(query_json)
 
-        vars1 = expected["head"]["vars"]
-        vars2 = query["head"]["vars"]
-        
+        vars1 = []
+        unique_vars1 = []
+        vars2 = []
+        unique_vars2 = []
+
         # Compare and remove similar parts in "head" section
-        unique_vars1 = [v for v in vars1 if v not in vars2]
-        unique_vars2 = [v for v in vars2 if v not in vars1]
+        if expected.get("head") is not None and expected.get("head").get("vars") is not None:
+            vars1 = expected.get("head").get("vars")
+            unique_vars1 = vars1
+
+        if query.get("head") is not None and query.get("head").get("vars") is not None:
+            vars2 = query.get("head").get("vars")
+            unique_vars2 = vars2
+
+        if expected.get("head") is not None and expected.get("head").get("vars") is not None:
+            unique_vars1 = [v for v in vars1 if v not in vars2]
+            expected["head"]["vars"] = unique_vars1
         
-        expected["head"]["vars"] = unique_vars1
-        query["head"]["vars"] = unique_vars2
+        if query.get("head") is not None and query.get("head").get("vars") is not None:
+            unique_vars2 = [v for v in vars2 if v not in vars1]
+            query["head"]["vars"] = unique_vars2
         
-        # Compare and remove similar parts in "bindings" section using the custom comparison function
-        bindings1 = expected["results"]["bindings"]
-        bindings2 = query["results"]["bindings"]
+        # Check if its a boolean result or variable binding results
+        if query.get("results") is not None and expected.get("results") is not None:
+            # Compare and remove similar parts in "bindings" section using the custom comparison function
+            bindings1 = expected["results"]["bindings"]
+            bindings2 = query["results"]["bindings"]
 
-        unique_bindings1 = [b1 for b1 in bindings1 if not any(self.json_elements_equal(b1, b2, compare_with_intended_behaviour=False) for b2 in bindings2)]
-        unique_bindings2 = [b2 for b2 in bindings2 if not any(self.json_elements_equal(b2, b1, compare_with_intended_behaviour=False) for b1 in bindings1)]
+            unique_bindings1 = self.remove_once_found(bindings1, bindings2, compare_with_intended_behaviour=False)
+            unique_bindings2 = self.remove_once_found(bindings2, bindings1, compare_with_intended_behaviour=False)
 
-        expected["results"]["bindings"] = unique_bindings1
-        query["results"]["bindings"] = unique_bindings2
+            expected["results"]["bindings"] = unique_bindings1
+            query["results"]["bindings"] = unique_bindings2
 
-        if len(expected["results"]["bindings"]) == 0 and len(query["results"]["bindings"]) == 0 and len(expected["head"]["vars"]) == 0 and len(query["head"]["vars"]) == 0:
-            status = "Passed"
-            error_type = ""
+            if len(expected["results"]["bindings"]) == 0 and len(query["results"]["bindings"]) == 0 and len(expected["head"]["vars"]) == 0 and len(query["head"]["vars"]) == 0:
+                status = "Passed"
+                error_type = ""
+            else:
+                unique_bindings1 = self.remove_once_found(bindings1, bindings2, compare_with_intended_behaviour=True)
+                unique_bindings2 = self.remove_once_found(bindings2, bindings1, compare_with_intended_behaviour=True)
+                if len(unique_bindings1) == 0 and len(unique_bindings2) == 0:
+                    status = "Failed: Intended behavior"
+                    error_type = "Known, intended behaviour that does not comply with SPARQL standard"
+            expected_string = self.generate_highlighted_string_json(json.loads(expected_json), expected, unique_bindings1)
+            query_string = self.generate_highlighted_string_json(json.loads(query_json), query, unique_bindings2)
+            expected_string_red = self.generate_highlighted_string_json(expected, expected, unique_bindings1)
+            query_string_red = self.generate_highlighted_string_json(query, query, unique_bindings2)
         else:
-            unique_bindings1 = [b1 for b1 in bindings1 if not any(self.json_elements_equal(b1, b2, compare_with_intended_behaviour=True) for b2 in bindings2)]
-            unique_bindings2 = [b2 for b2 in bindings2 if not any(self.json_elements_equal(b2, b1, compare_with_intended_behaviour=True) for b1 in bindings1)]
-            if len(unique_bindings1) == 0 and len(unique_bindings2) == 0:
-                status = "Failed: Intended behavior"
-                error_type = "Known, intended behaviour that does not comply with SPARQL standard"
-        expected_string = self.generate_highlighted_string_json(json.loads(expected_json), expected, unique_bindings1)
-        query_string = self.generate_highlighted_string_json(json.loads(query_json), query, unique_bindings2)
+            bool1 = expected["boolean"]
+            bool2 = query["boolean"]
+            if str(bool1) == str(bool2):
+                del expected["boolean"]
+                del query["boolean"]
+            expected_string = self.generate_highlighted_string_json(json.loads(expected_json), expected, [])
+            query_string = self.generate_highlighted_string_json(json.loads(query_json), query, [])
+            expected_string_red = self.generate_highlighted_string_json(expected, expected, [])
+            query_string_red = self.generate_highlighted_string_json(query, query, [])
+
+
         test_name = test[2]
-        self.test_data[test_name].update({"expectedHtml": expected_string, "gotHtml": query_string})
+        self.test_data[test_name].update({"expectedHtml": expected_string, "gotHtml": query_string, "expectedHtmlRed": expected_string_red, "gotHtmlRed": query_string_red})
         
         return status, error_type
 
@@ -883,7 +1053,10 @@ class TestSuite:
                 delimiter = ""
             else:
                 delimiter = separator
-            result += str(element) + delimiter
+            element = str(element)
+            if separator in element:
+                element = "\""+element+"\""
+            result += element + delimiter
             index += 1
         return result
 
@@ -905,14 +1078,14 @@ class TestSuite:
         for row in array:
             if row in remaining:
                 if row in mark_red:
-                    result_string += '</label><label class="red">'
+                    result_string += '<label class="red">'
                 else:
-                    result_string += '</label><label class="yellow">'
-                result_string += escape(self.row_to_string(row, separator))
-                result_string += '</label>\n<label class="normal">'
+                    result_string += '<label class="yellow">'
+                result_string += self.escape(self.row_to_string(row, separator))
+                result_string += '</label>\n'
             else:
-                result_string += escape(self.row_to_string(row, separator)) + "\n"
-        return '<label class="normal">' + result_string + '</label>'
+                result_string += self.escape(self.row_to_string(row, separator)) + "\n"
+        return result_string
 
     def compare_array(self, expected_result: list, result: list, result_copy: list, expected_result_copy: list, use_config: bool):
         """
@@ -995,8 +1168,11 @@ class TestSuite:
         
         expected_html = self.generate_highlighted_string_sv(expected_array, expected_array_copy, expected_array_mark_red, result_format)
         actual_html = self.generate_highlighted_string_sv(actual_array, actual_array_copy, actual_array_mark_red, result_format)
+        expected_html_red = self.generate_highlighted_string_sv(expected_array_copy, expected_array_copy, expected_array_mark_red, result_format)
+        actual_html_red = self.generate_highlighted_string_sv(actual_array_copy, actual_array_copy, actual_array_mark_red, result_format)
+
         test_name = test[2]
-        self.test_data[test_name].update({"expectedHtml": expected_html, "gotHtml": actual_html})
+        self.test_data[test_name].update({"expectedHtml": expected_html, "gotHtml": actual_html, "expectedHtmlRed": expected_html_red, "gotHtmlRed": actual_html_red})
 
         return status, error_type
 
@@ -1040,6 +1216,19 @@ class TestSuite:
         else:
             self.passed_failed += 1
 
+    def update_graph_status(self, graph_name: str, status: str, error_type: str):
+        """
+        Updates the status for all test of a graph.
+
+        Parameters:
+            graph_name (str): The name of the graph.
+            status (str): The status of the graph.
+            error_type (str): The error message associated with the graph.
+        """
+        for test in self.tests_of_graph[graph_name]:
+            test_name = test[2]
+            self.update_test_status(test_name, status, error_type)
+
     def process_test(self, test: tuple, query_result: str, expected_string: str, type_name: str, result_format: str):
         """
         Processes an individual test evaluating its result and updating its status.
@@ -1053,16 +1242,19 @@ class TestSuite:
         """
         status, error_type = "Failed", ""
         if query_result[0] == 200:
-            if type_name == "QueryEvaluationTest" or "CSVResultFormatTest":
+            if type_name == "QueryEvaluationTest" or type_name =="CSVResultFormatTest":
                 status, error_type = self.evaluate_query(expected_string, query_result[1], test, result_format)
         else:
             if "exception" in query_result[1]:
+                query_log = json.loads(query_result[1])["exception"].replace(";", ";\n")
                 error_type = "QUERY EXCEPTION"
-                self.test_data[test[2]].update({"queryLog": query_result[1]})
+                self.test_data[test[2]].update({"queryLog": self.escape(query_log)})
             elif "HTTP Request" in query_result[1]:
                 error_type = "REQUEST ERROR"
+                self.test_data[test[2]].update({"queryLog": self.escape(query_result[1])})
             else:    
                 error_type = "Undefined error"
+                self.test_data[test[2]].update({"queryLog": self.escape(query_result[1])})
 
         if type_name == "PositiveSyntaxTest11":
             if error_type != "":
@@ -1079,6 +1271,14 @@ class TestSuite:
                 error_type = "EXPECTED: QUERY EXCEPTION ERROR"
         self.update_test_status(test[2], status, error_type)
 
+    def prepare_query_file(self, query_string):
+        result = ""
+        lines = query_string.split("\n")
+        filtered_lines = [line for line in lines if not line.strip().startswith("#")]
+        result = "\n".join(filtered_lines)
+        return result.replace("\n", " ").replace("\t", " ") 
+
+
     def prepare_test(self, test: tuple):
         """
         Prepares the execution of a test by setting up the necessary environment and data.
@@ -1088,7 +1288,7 @@ class TestSuite:
         """
         type_name = self.test_data[test[2]]["typeName"]
         expected_string = self.test_data[test[2]]["resultFile"]
-        query_string = self.test_data[test[2]]["queryFile"].replace("\n", " ")
+        query_string = self.prepare_query_file(self.test_data[test[2]]["queryFile"])
         self.test_data[test[2]]["querySent"] = query_string
         result_format = test[1][test[1].rfind(".") + 1:]
 
@@ -1096,23 +1296,18 @@ class TestSuite:
 
         self.process_test(test, query_result, expected_string, type_name, result_format)
 
-
-    def log_for_all_tests(self, graph: str, error_type: str, index_log: str, server_log: str, failed: bool):
+    def log_for_all_tests(self, graph_name: str, name: str, log: str):
         """
-        Logs information for all tests in a given graph.
+        Logs information for all tests of a given graph.
 
         Parameters:
-            graph (str): The graph.
-            error_type (str): Type of error encountered.
-            index_log (str): Log information from the indexing process.
-            server_log (str): Log information from the server.
-            failed (bool): Boolean indicating if the test failed.
+            graph_name (str): The graph.
+            name (str): name .
+            log (str): Log information from the server.
         """
-        for test in self.tests_of_graph[graph]:
+        for test in self.tests_of_graph[graph_name]:
             test_name = test[2]
-            if failed:
-                self.update_test_status(test_name, "Failed", error_type)
-            self.test_data[test_name].update({"indexLog": self.remove_date_time_parts(index_log), "serverLog": server_log})
+            self.test_data[test_name][name] = self.remove_date_time_parts(log)
 
     def start_graph_server(self, graph):
         """
@@ -1124,11 +1319,16 @@ class TestSuite:
         Returns:
             True if the server started successfully, False otherwise.
         """
+        result = True
         server_result = self.start_server()
         if server_result[0] != 200:
-            self.log_for_all_tests(graph, "SERVER ERROR", "", server_result[1], True)
-            return False
-        return True
+            if os.path.exists("./TestSuite.server-log.txt"):
+                server_log = self.read_file("./TestSuite.server-log.txt")
+            self.log_for_all_tests(graph, "serverLog", self.escape(self.remove_date_time_parts(server_log)))
+            self.update_graph_status(graph, "Failed", "SERVER ERROR")
+            result =  False
+        self.log_for_all_tests(graph, "serverStatus", server_result[1])
+        return result
 
     def remove_date_time_parts(self, index_log: str) -> str:
         """
@@ -1142,8 +1342,8 @@ class TestSuite:
         Returns:
             The index log without time and date as a string.
         """
-        pattern = r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\s*-'
-        return re.sub(pattern, '', index_log)
+        pattern = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\s*-"
+        return re.sub(pattern, "", index_log)
 
     def index_graph(self, graph: str, graph_path: str):
         """
@@ -1156,13 +1356,15 @@ class TestSuite:
         Returns:
             True if indexing is successful, False otherwise.
         """
+        result = True
         index_log = self.index(graph_path)
 
         if "Index build completed" not in index_log:
-            self.log_for_all_tests(graph, "INDEX BUILD ERROR", self.remove_date_time_parts(index_log), "", True)
-            return False
-        self.log_for_all_tests(graph, "", index_log, "", False)
-        return True
+            self.update_graph_status(graph, "Failed", "INDEX BUILD ERROR")
+            result = False
+
+        self.log_for_all_tests(graph, "indexLog", index_log)
+        return result
 
     def prepare_test_environment(self, graph: str, graph_path: str):
         """
@@ -1197,6 +1399,9 @@ class TestSuite:
                 self.prepare_test(test)
 
             self.stop_server()
+            if os.path.exists("./TestSuite.server-log.txt"):
+                server_log = self.read_file("./TestSuite.server-log.txt")
+                self.log_for_all_tests(graph, "serverLog", self.escape(self.remove_date_time_parts(server_log)))
             self.remove_index()
 
     def run(self):
@@ -1205,18 +1410,17 @@ class TestSuite:
             """
             self.run_query_tests()
 
-    def extract_tests(self, output_csv_path: str):
+    def extract_tests(self):
         """
         Extracts tests from a set of directories and compiles results into a CSV file.
 
         Parameters:
             output_csv_path: Path to the output CSV file.
         """
-        dir_paths = self.read_file("directories.txt").split("\n")
         queries = ["Query.rq", "Syntax.rq", "Protocol.rq", "Update.rq", "Format.rq"]
         csv_rows = []
 
-        for path in dir_paths:
+        for path in self.directories:
             print("Extracting tests from: " + path)
             self.remove_index()
             self.index(self.path_to_test_suite + path + "/manifest.ttl")
@@ -1231,7 +1435,8 @@ class TestSuite:
                     for row in csv_reader:
                         csv_rows.append(row)
             self.stop_server()
-        with open(output_csv_path, "w", newline="") as csvfile:
+            self.remove_index()
+        with open(self.file_name_for_tests, "w", newline="") as csvfile:
             csv_writer = csv.writer(csvfile)
             csv_writer.writerows(csv_rows)
 
@@ -1254,20 +1459,40 @@ class TestSuite:
 
 def main():
     args = sys.argv[1:]
-    if len(args) != 3:
-        print(f"Usage to extract tests: python3 {sys.argv[0]} <path to binaries> <file> extract\n Usage to extract tests: python3 {sys.argv[0]} <path to binaries> <file> <name of the run>)")
-        sys.exit()
-    test_suite = TestSuite(args[0], args[2])
-    test_suite.initialize_config()
-    if args[2] == "extract":
-        print("GET TESTS!")
-        test_suite.extract_tests(args[1])
-    else:
-        print("RUN TESTS!")
-        test_suite.initialize_tests(args[1])
+    if len(args) < 1:
+        print(f"  Usage to create config: python3 {sys.argv[0]} config <server address> <port> <path to testsuite> <path to the qlever binaries> <file name for test list>\n  Usage to extract tests: python3 {sys.argv[0]} extract \n  Usage to run tests: python3 {sys.argv[0]} <name for the test suite run>")
+        return
+    
+    test_suite = TestSuite(args[0])
+    if args[0] == "config":
+        if len(args) == 6:
+            print(f"Create basic config.")
+            test_suite.create_config(args[1], args[2], args[3], args[4], args[5])
+        else:
+            print(f"Usage to create config: python3 {sys.argv[0]} config <server address> <port> <path to testsuite> <path to the qlever binaries> <file name for test list>")
+            return
+
+    if args[0] == "extract":
+        if len(args) == 1:
+            if not test_suite.initialize_config():
+                return
+            print(f"Extracting tests from test suite!")
+            test_suite.extract_tests()
+        else:
+            print(f"Usage to extract tests: python3 {sys.argv[0]} extract")
+            return
+
+    if len(args) == 1 and args[0] != "config" and args[0] != "extract":
+        if not test_suite.initialize_config():
+            return
+        print("Run tests!")
+        test_suite.initialize_tests()
         test_suite.run()
         test_suite.generate_json_file()
-    print("DONE!")
+    elif args[0] != "config" and args[0] != "extract":
+        print(f"  Usage to create config: python3 {sys.argv[0]} config <server address> <port> <path to testsuite> <path to binaries> <file name for test list>\n  Usage to extract tests: python3 {sys.argv[0]} extract \n  Usage to run tests: python3 {sys.argv[0]} <name for the test suite run>")
+        return
+    print("Done!")
 
 if __name__ == "__main__":
     main()
