@@ -12,6 +12,7 @@ SELECT ?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?appro
 WHERE {
     ?test rdf:type mf:ProtocolTest .
     BIND ("ProtocolTest" AS ?type) .
+    ?test rdfs:comment ?comment .
     OPTIONAL {?test mf:name ?name }.
     OPTIONAL {?test dawgt:approval ?approval }.
     OPTIONAL {?test dawgt:approval ?approvedBy }.

@@ -21,7 +21,7 @@ def create_config(server_address: str, port: str, path_to_testsuite: str, path_t
     "port": port,
     "path_to_testsuite": path_to_testsuite,
     "path_to_binaries": path_to_binaries,
-    "queries": ["Query.rq", "Syntax.rq", "Update.rq", "Format.rq"],
+    "queries": ["Query.rq", "Syntax.rq", "Update.rq", "Format.rq", "Protocol.rq", "Service.rq"],
     "directories": directories,
     "alias": {            
             "http://www.w3.org/2001/XMLSchema#integer": "http://www.w3.org/2001/XMLSchema#int",
