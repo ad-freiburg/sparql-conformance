@@ -8,7 +8,7 @@ PREFIX sd:      <http://www.w3.org/ns/sparql-service-description#>
 PREFIX ent:     <http://www.w3.org/ns/entailment/RDF>
 PREFIX rs:      <http://www.w3.org/2001/sw/DataAccess/tests/result-set#>
 
-SELECT ?test ?type ?name ?feature ?comment ?approval ?approvedBy ?query ?data ?result ?regime ?action ?resultData ?request ?graphData ?graph ?resultGraph ?label ?resultLabel
+SELECT ?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?approvedBy ?regime # ?graphStore ?graphLabel ?graphData ?actionGraphStore ?actionGraphLabel ?actionGraphData
 WHERE {
     {
         ?test rdf:type mf:PositiveSyntaxTest11 .
@@ -25,9 +25,16 @@ WHERE {
     {
         ?test rdf:type mf:NegativeUpdateSyntaxTest11 .
     }
-    ?test rdf:type ?type .
+    ?test rdf:type ?iftype
+    BIND(
+        IF(STRENDS( STR(?iftype), "PositiveSyntaxTest11" ), "PositiveSyntaxTest11",
+        IF(STRENDS( STR(?iftype), "NegativeSyntaxTest11" ), "NegativeSyntaxTest11",
+        IF(STRENDS( STR(?iftype), "PositiveUpdateSyntaxTest11" ), "PositiveUpdateSyntaxTest11",
+        IF(STRENDS( STR(?iftype), "NegativeUpdateSyntaxTest11" ), "NegativeUpdateSyntaxTest11",
+    ""))))
+    AS ?type).
     OPTIONAL {?test mf:name ?name }.
     OPTIONAL {?test dawgt:approval ?approval }.
     OPTIONAL {?test dawgt:approvedBy ?approvedBy }.
-    ?test mf:action ?action .
+    ?test mf:action ?query .
 }

@@ -1,6 +1,7 @@
 
 $(document).ready(async function () {
     var jsonData = await fetchData();
+    console.log(jsonData)
     var selectedRun = Object.keys(jsonData)[0];
     $(`#table-select-runs1 tr[data-name=${selectedRun}]`).addClass("row-selected");
     var selectedRun2 = -1;
@@ -182,17 +183,20 @@ async function fetchData() {
     var resultsPath = window.location.pathname.replace(/www\/.*/, "results/");
 
     let data = await fetch(resultsPath).then(response => response.text());
-
+    console.log(data)
     let fileFetchPromises = $(data).find("a").map(function() {
         var file = $(this).attr("href");
         runs.push(file);
+        console.log(file)
         return fetch(`/results/${file}`).then(response => response.json());
     }).get();
 
     let fileDataArray = await Promise.all(fileFetchPromises);
+    console.log(fileDataArray)
     fileDataArray.forEach((fileData, index) => {
+        console.log(fileData)
         var name = runs[index].replace(".json", "");
-        jsonData[name] = fileData[name];
+        jsonData[name] = fileData;
     });
 
     return jsonData;
@@ -318,27 +322,27 @@ function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2){
     if (testDetails.errorType == "RESULTS NOT THE SAME" || testDetails.errorType.includes("Known")) {
         overviewEntries.push({ label: "Expected Query Result", value: [testDetails.expectedHtml, testDetails.expectedHtmlRed], key: "expectedHtml", line: "False" });
         overviewEntries.push({ label: "Query Result", value: [testDetails.gotHtml, testDetails.gotHtmlRed], key: "gotHtml", line: "False" });
-        overviewEntries.push({ label: "Index File", value: escapeHtml(testDetails.graphFile), key: "graphFile", line: "False" });
-        overviewEntries.push({ label: "Query File", value: escapeHtml(testDetails.queryFile), key: "queryFile", line: "False"  });
+        overviewEntries.push({ label: "Index File", value: testDetails.graphFile, key: "graphFile", line: "False" });
+        overviewEntries.push({ label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False"  });
     }
     if (testDetails.errorType == "QUERY EXCEPTION") {
-        overviewEntries.push({ label: "Query File", value: escapeHtml(testDetails.queryFile), key: "queryFile", line: "False" });
+        overviewEntries.push({ label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False" });
         overviewEntries.push({ label: "Query Log", value: testDetails.queryLog, key: "queryLog", line: "False"  });
     }
     if (testDetails.errorType == "REQUEST ERROR") {
-        overviewEntries.push({ label: "Query File", value: escapeHtml(testDetails.queryFile), key: "queryFile", line: "False" });
+        overviewEntries.push({ label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False" });
         overviewEntries.push({ label: "Query Log", value: testDetails.queryLog, key: "queryLog", line: "False"  });
     }
     if (testDetails.errorType == "EXPECTED: QUERY EXCEPTION ERROR") {
-        overviewEntries.push({ label: "Query File", value: escapeHtml(testDetails.queryFile), key: "queryFile", line: "False" });
+        overviewEntries.push({ label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False" });
         overviewEntries.push({ label: "Query Log", value: testDetails.queryLog, key: "queryLog", line: "False"  });
     }
     if (testDetails.errorType == "Undefined error") {
-        overviewEntries.push({ label: "Query File", value: escapeHtml(testDetails.queryFile), key: "queryFile", line: "False" });
+        overviewEntries.push({ label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False" });
         overviewEntries.push({ label: "Query Log", value: testDetails.queryLog, key: "queryLog", line: "False"  });
     }
     if (testDetails.errorType == "INDEX BUILD ERROR") {
-        overviewEntries.push({ label: "Index File", value: escapeHtml(testDetails.graphFile), key: "graphFile", line: "False"   });
+        overviewEntries.push({ label: "Index File", value: testDetails.graphFile, key: "graphFile", line: "False"   });
         overviewEntries.push({ label: "Index Build Log", value: testDetails.indexLog, key: "indexLog", line: "False"  });
     }
     if (testDetails.errorType == "SERVER ERROR") {
@@ -347,10 +351,10 @@ function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2){
     }
 
     var allEntries = [
-        { label: "Index File", value: escapeHtml(testDetails.graphFile), key: "graphFile", line: "False"  },
+        { label: "Index File", value: testDetails.graphFile, key: "graphFile", line: "False"  },
         { label: "Index Build Log", value: testDetails.indexLog, key: "indexLog", line: "False"  },
-        { label: "Query File", value: escapeHtml(testDetails.queryFile), key: "queryFile", line: "False"  },
-        { label: "Query Sent", value: escapeHtml(testDetails.querySent), key: "querySent", line: "False"  },
+        { label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False"  },
+        { label: "Query Sent", value: testDetails.querySent, key: "querySent", line: "False"  },
         { label: "Query Log", value: testDetails.queryLog, key: "queryLog", line: "False"  },
         { label: "Server Status", value: testDetails.serverStatus, key: "serverStatus", line: "True" },
         { label: "Server Log", value: testDetails.serverLog, key: "serverLog", line: "False" },
@@ -359,7 +363,7 @@ function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2){
         { label: "Query Filename", value: testDetails.query, key: "query", line: "True"  },
         { label: "Index Filename", value: testDetails.graph, key: "graph", line: "True" },
         { label: "Result Filename", value: testDetails.result, key: "result", line: "True"  },
-        { label: "Result File", value: escapeHtml(testDetails.resultFile), key: "resultFile", line: "False" },
+        { label: "Result File", value: testDetails.resultFile, key: "resultFile", line: "False" },
         { label: "Test Type", value: testDetails.type, key: "type", line: "True" },
         { label: "Test Feature", value: testDetails.feature, key: "feature", line: "True" },
         { label: "Approval", value: testDetails.approval, key: "approval", line: "True" },

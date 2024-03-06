@@ -1,0 +1,17 @@
+PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs:    <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX mf:      <http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#>
+PREFIX dawgt:   <http://www.w3.org/2001/sw/DataAccess/tests/test-dawg#>
+PREFIX qt:      <http://www.w3.org/2001/sw/DataAccess/tests/test-query#>
+PREFIX ut:      <http://www.w3.org/2009/sparql/tests/test-update#>
+PREFIX sd:      <http://www.w3.org/ns/sparql-service-description#>
+PREFIX ent:     <http://www.w3.org/ns/entailment/RDF>
+PREFIX rs:      <http://www.w3.org/2001/sw/DataAccess/tests/result-set#>
+
+SELECT ?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?approvedBy ?regime # ?graphStore ?graphLabel ?graphData ?actionGraphStore ?actionGraphLabel ?actionGraphData
+WHERE {
+    ?test rdf:type mf:ServiceDescriptionTest .
+    BIND ("ServiceDescriptionTest" AS ?type) .
+    OPTIONAL {?test mf:name ?name }.
+    OPTIONAL {?test dawgt:approval ?approval }.
+}

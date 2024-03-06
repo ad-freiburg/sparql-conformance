@@ -8,18 +8,24 @@ PREFIX sd:      <http://www.w3.org/ns/sparql-service-description#>
 PREFIX ent:     <http://www.w3.org/ns/entailment/RDF>
 PREFIX rs:      <http://www.w3.org/2001/sw/DataAccess/tests/result-set#>
 
-SELECT ?test ?type ?name ?feature ?comment ?approval ?approvedBy ?query ?data ?result ?regime ?action ?resultData ?request ?graphData ?graph ?resultGraph ?label ?resultLabel
+SELECT DISTINCT ?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?approvedBy ?regime # ?graphStore ?graphLabel ?graphData ?actionGraphStore ?actionGraphLabel ?actionGraphData
 WHERE {
-    ?test rdf:type mf:QueryEvaluationTest .
-    ?test rdf:type ?type .
+    ?test rdf:type mf:UpdateEvaluationTest .
+    BIND ("UpdateEvaluationTest" AS ?type) .
+    ?test mf:action ?action .
+    ?action ut:request ?query .
+    OPTIONAL  { ?action ut:data ?data .} 
+    OPTIONAL  { ?action ut:graphData ?actionGraphData .}
+    OPTIONAL  { ?actionGraphData ut:graph ?actionGraphStore .}
+    OPTIONAL  { ?actionGraphData rdfs:label ?actionGraphLabel .}
+    ?test mf:result ?resultObject .
+    OPTIONAL  { ?resultObject ut:data ?result } .
+    OPTIONAL  { ?resultObject ut:graphData ?graphData .}
+    OPTIONAL  { ?graphData ut:graph ?graphStore .}
+    OPTIONAL  { ?graphData rdfs:label ?graphLabel .}
     OPTIONAL {?test mf:name ?name }.
     OPTIONAL {?test mf:feature ?feature }.
     OPTIONAL {?test rdfs:comment ?comment }.
     OPTIONAL {?test dawgt:approval ?approval }.
     OPTIONAL {?test dawgt:approvedBy  ?approvedBy }.
-    ?test mf:action ?action .
-    ?action qt:data ?data .
-    ?action qt:query ?query .
-    OPTIONAL {?action sd:entailmentRegime ?regime }.
-    ?test mf:result ?result .
 }
