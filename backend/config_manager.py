@@ -9,7 +9,7 @@ def create_config(server_address: str, port: str, path_to_testsuite: str, path_t
     """
     path_to_server_main = os.path.join(path_to_binaries, "ServerMain")
     path_to_index_builder = os.path.join(path_to_binaries, "IndexBuilderMain")
-    if not path_exists(path_to_testsuite) or not path_exists(path_to_binaries) or not path_exists(path_to_server_main) or not path_exists():
+    if not path_exists(path_to_testsuite) or not path_exists(path_to_binaries) or not path_exists(path_to_server_main) or not path_exists(path_to_index_builder):
         return False
     directories = [directory for directory in os.listdir(path_to_testsuite) if os.path.isdir(os.path.join(path_to_testsuite, directory)) and os.path.isfile(os.path.join(path_to_testsuite, directory, "manifest.ttl"))]
     config = {
