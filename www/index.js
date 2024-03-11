@@ -412,17 +412,117 @@ function buildHTML(entries, id){
     });
 }
 
+function copyObject(object){
+    return JSON.parse(JSON.stringify(object));
+}
+
+function matchStatus(status, s, results){
+    switch(status) {
+        case "Passed":
+            results[`${s}ToP`] = results[`${s}ToP`] + 1
+            break;
+        case "Failed: Intended":
+            results[`${s}ToI`] = results[`${s}ToI`] + 1
+            break;
+        case "Failed":
+            results[`${s}ToF`] = results[`${s}ToF`] + 1
+            break;
+        case "NOT TESTED":
+            results[`${s}ToN`] = results[`${s}ToN`] + 1
+                break;
+    }
+}
+
 function compare(dict1, dict2) {
-    let result = {};
-    for (let key in dict1) {
+    const allKeys = new Set([...Object.keys(dict1), ...Object.keys(dict2)]);
+    var result = {};
+    // dict2 to dict 1 ex. pToF dict2 Passed to dict1 Failed
+    var information = {
+        "pToF": 0,
+        "pToI": 0,
+        "pToN": 0,
+        "fToP": 0,
+        "fToI": 0,
+        "fToN": 0,
+        "iToP": 0,
+        "iToF": 0,
+        "iToN": 0,
+        "nToP": 0,
+        "nToF": 0,
+        "nToI": 0,
+        "addedN": 0,
+        "addedP": 0,
+        "addedI": 0,
+        "addedF": 0,
+        "deleted": 0,
+        "unchanged": 0
+    };
+
+    for (const key of allKeys) {
         if (key === "info") continue
-        if (dict1[key]["status"] != dict2[key]["status"] || dict1[key]["errorType"] != dict2[key]["errorType"]){
-            result[key] = dict1[key]
-            for (let subKey in dict2[key]){
-                result[key][subKey + "-run2"] = dict2[key][subKey]
+        if (key in dict1 && key in dict2) {
+            if (dict1[key]["status"] != dict2[key]["status"] || dict1[key]["errorType"] != dict2[key]["errorType"]){
+                result[key] = copyObject(dict1[key]);
+                for (let subKey in result[key]){
+                    result[key][subKey + "-run2"] = dict2[key][subKey]
+                }
             }
+            if (dict1[key]["status"] != dict2[key]["status"]) {
+                switch(dict2[key]["status"]) {
+                    case "Passed":
+                        matchStatus(dict1[key]["status"], "p", information)
+                        break;
+                    case "Failed: Intended":
+                        matchStatus(dict1[key]["status"], "i", information)
+                        break;
+                    case "Failed":
+                        matchStatus(dict1[key]["status"], "f", information)
+                        break;
+                    case "NOT TESTED":
+                        matchStatus(dict1[key]["status"], "n", information)
+                            break;
+                }
+            } else {
+                information["unchanged"] = information["unchanged"] + 1
+            }
+        } else if (key in dict1) {
+            switch(dict1[key]["status"]) {
+                case "Passed":
+                    results["addedP"] = results["addedP"] + 1
+                    break;
+                case "Failed: Intended":
+                    results["addedP"] = results["addedP"] + 1
+                    break;
+                case "Failed":
+                    results["addedP"] = results["addedP"] + 1
+                    break;
+                case "NOT TESTED":
+                    results["addedP"] = results["addedP"] + 1
+                    break;
+            }
+            console.log("Key in 1:")
+            console.log(key)
+            result[key] = copyObject(dict1[key]);
+            for (let subKey in result[key]){
+                result[key][subKey + "-run2"] = "Test not part of run!"
+            }
+        } else {
+            information["deleted"] = information["deleted"] + 1
+            console.log("Key in 2:")
+            console.log(key)
+            result[key] = copyObject(dict2[key])
+            console.log(result[key])
+            for (let subKey in result[key]){
+                result[key][subKey + "-run2"] = result[key][subKey]
+                result[key][subKey] = "Test not part of run!"
+            }
+            result[key]["name"] = result[key]["name" + "-run2"]
+            result[key]["group"] = result[key]["group" + "-run2"]
+            result[key]["typeName"] = result[key]["typeName" + "-run2"]
+            console.log(result[key])
         }
     }
+    console.log(information)
     return result;
 }
 
@@ -548,7 +648,7 @@ function filterTable(value, jsonArray){
 function searchTable(value, currentArray) {
     // Keyword search, match if all keywords are found within a item of currentArray
     var searchedArray = [];
-    var keywords = value.toLowerCase().split(',');
+    var keywords = value.toLowerCase().split(' ');
 
     currentArray.forEach(function(test) {
         // Check that every keyword matches at least one property of 'test'
