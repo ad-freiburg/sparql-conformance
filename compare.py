@@ -1,4 +1,6 @@
 import json
+import sys
+import os 
 
 def match_status(status, new_run_test, s, results):
     match status:
@@ -55,7 +57,6 @@ def compare_dicts(old_run, new_run):
                 case "Failed: Intended":
                     results["added-i"].append(new_run_test)
             continue
-        print(old_run_test.keys())
         if old_run_test["status"] == new_run_test["status"]:
             match new_run_test["status"]:
                 case "Passed":
@@ -67,30 +68,57 @@ def compare_dicts(old_run, new_run):
                 case "Failed: Intended":
                     results["i"].append(new_run_test)
         else:
-            match new_run_test["status"]:
+            match old_run_test["status"]:
                 case "Passed":
-                    match_status(old_run_test["status"], new_run_test, "p", results)
+                    match_status(new_run_test["status"], new_run_test, "p", results)
                 case "Failed":
-                    match_status(old_run_test["status"], new_run_test, "f", results)
+                    match_status(new_run_test["status"], new_run_test, "f", results)
                 case "NOT TESTED":
-                    match_status(old_run_test["status"], new_run_test, "n", results)
+                    match_status(new_run_test["status"], new_run_test, "n", results)
                 case "Failed: Intended":
-                    match_status(old_run_test["status"], new_run_test, "i", results)
+                    match_status(new_run_test["status"], new_run_test, "i", results)
 
     return results
 
-
 def main():
-    with open('r1.json', 'r') as file:
-        f1 = json.load(file)
-    with open('r2.json', 'r') as file:
-        f2 = json.load(file)
-    results = compare_dicts(f1, f2)
-    for key in results.keys():
-        print("--------")
-        print(key)
-        print(len(results[key]))
+    args = sys.argv[1:]
+    workflow = {"master": ""}
+    with open("workflow.json", "r") as file:
+        workflow = json.load(file)
+    old_run = workflow["master"]
 
+    if old_run != "":
+        with open("./results/" + old_run + ".json", "r") as file:
+            f1 = json.load(file)
+        with open("./results/" + args[0] + ".json", "r") as file:
+            f2 = json.load(file)
+        results = compare_dicts(f1, f2)
+        status = 0
+        for key in results.keys():
+            if len(results[key]) > 0:
+                print("--------")
+                print(key)
+                print(len(results[key]))
+                if key.startswith("p") and key != "p":
+                    status = 1
+    
+        if status != 0:
+            print("New run contains test that previously 'Passed' and now don't.")
+        else:
+            workflow["master"] = args[0]
+            with open("workflow.json", "w") as file:
+                json.dump(workflow, file, indent=4)
+
+        print("Link to compare runs: https://sirdnarch.github.io/test-web/index-" + args[0] + "-" + old_run + ".html")
+        os.system("cp ../test-web/index.html ../test-web/index-" + args[0] + "-" + old_run + ".html")
+        sys.exit(status)
+    else:
+        workflow["master"] = args[0]
+        with open("workflow.json", "w") as file:
+            json.dump(workflow, file, indent=4)
+        print("New run")
+        print("Link to look at run: https://sirdnarch.github.io/test-web/index.html")
+        sys.exit(0)
 
 if __name__ == "__main__":
     main()

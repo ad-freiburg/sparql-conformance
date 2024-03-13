@@ -13,7 +13,7 @@ def prepare_request(request_with_reponse: str) -> str:
         request_lines[index] = line
         if not line and not before_header and index_line_between == 0:
             index_line_between = index
-        if line.startswith("POST") or line.startswith("GET"):
+        if line.startswith("POST") or line.startswith("GET") or line.startswith("PUT"):
             before_header = False
             index_header = index
         if line.startswith("GET") and not line.endswith("HTTP/1.1"):
@@ -112,11 +112,11 @@ def run_protocol_test(test: str, server_address: str, port: str) -> tuple:
         error_type = ""
     extracted_expected_responses = ""
     for response in responses:
-        extracted_expected_responses += str(response)
+        extracted_expected_responses += str(response) + "\n"
     extracted_sent_requests = ""
     for request in requests:
-        extracted_sent_requests += request
+        extracted_sent_requests += request + "\n"
     got_responses_string = ""
     for response in got_responses:
-        got_responses_string += response
+        got_responses_string += response + "\n"
     return result, error_type, extracted_expected_responses, extracted_sent_requests, got_responses_string

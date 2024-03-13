@@ -31,12 +31,12 @@ def copy_namespaces(source_graph, target_graph):
         target_graph.bind(prefix, namespace, override=False)
 
 def highlight_differences(turtle_data, diff):
-    diff.serialize(format="turtle")
-    turtle_data = escape(turtle_data)
     namespace_to_prefix = {}
-    for prefix, namespace in diff.namespaces():
+    for prefix, namespace in turtle_data.namespaces():
        namespace_to_prefix[namespace] = prefix
-     
+    diff.serialize(format="turtle")
+    turtle_data = escape(turtle_data.serialize(format="turtle"))
+
     for s, p, o in diff:
         for namespace in namespace_to_prefix:
             if s.startswith(namespace):
@@ -45,12 +45,10 @@ def highlight_differences(turtle_data, diff):
                 p = p.replace(namespace, f"{namespace_to_prefix[namespace]}:")
             if o.startswith(namespace):
                 o = o.replace(namespace, f"{namespace_to_prefix[namespace]}:")
-        print(s)
         s, p, o = re.escape(escape(s)), re.escape(escape(p)), re.escape(escape(o))
-        pattern = rf"{s}\s+{p}\s+(?:[^.]*?\s+)?{o}[^.]*?\.(?!</label>)"
-
+        pattern = rf"{s}(?:[^.]*?)?{p}\s+(?:[^.]*?){o}[^.]*?\s+\.(?!</label>)"
         def replace_first_match(match):
-            return f'<label class="red">{escape(match.group())}</label>'
+            return f'<label class="red">{match.group()}</label>'
         turtle_data = re.sub(pattern, replace_first_match, turtle_data, flags=re.DOTALL)
 
 
@@ -99,8 +97,8 @@ def compare_ttl(expected_ttl: str, query_ttl: str) -> tuple:
         # Repair namespaces
         copy_namespaces(expected_graph, triples_in_expected_not_in_query)
         copy_namespaces(query_graph, triples_in_query_not_in_expected)
-        expected_string = highlight_differences(expected_graph.serialize(format="turtle"), triples_in_expected_not_in_query)
-        query_string = highlight_differences(query_graph.serialize(format="turtle"), triples_in_query_not_in_expected)        
+        expected_string = highlight_differences(expected_graph, triples_in_expected_not_in_query)
+        query_string = highlight_differences(query_graph, triples_in_query_not_in_expected)        
         expected_string_red = f'<label class="red">{escape(remove_prefix(triples_in_expected_not_in_query.serialize(format="turtle")))}</label>'
         query_string_red = f'<label class="red">{escape(remove_prefix(triples_in_query_not_in_expected.serialize(format="turtle")))}</label>'
     

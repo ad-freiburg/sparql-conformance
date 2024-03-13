@@ -38,6 +38,10 @@
 	border-color: #9ec5fe;
 	border-width: 0.2rem;
 }
+.filter-row{
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
+}
 .container-select-runs{
     overflow-y: auto;
     height: 100%;
@@ -71,4 +75,7 @@
 #div-filter-select{
     padding-top: 0.5rem;
     padding-bottom: 1rem;
+}
+#run-selection-text{
+    padding-top: 0.5rem !important;
 }

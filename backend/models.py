@@ -1,5 +1,6 @@
 import backend.util as util
 import os
+import json
 
 FAILED = "Failed"
 PASSED = "Passed"
@@ -17,7 +18,7 @@ FORMAT_ERROR = "QUERY RESULT FORMAT ERROR"
 
 #?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?approvedBy ?regime ?graphStore ?graphLabel ?graphData ?actionGraphStore ?actionGraphLabel ?actionGraphData group
 class TestObject: 
-    def __init__(self, row, path_to_test_suite):
+    def __init__(self, row, path_to_test_suite, config):
         self.test = row[5]
         self.type = row[0]
         self.typeName = row[0]
@@ -57,6 +58,7 @@ class TestObject:
         self.protocolSent = ""
         self.responseExtracted = ""
         self.response = ""
+        self.config = config
 
     def to_dict(self):
         test_dict = {
@@ -92,7 +94,8 @@ class TestObject:
             "protocol": util.escape(self.protocol),
             "protocolSent": util.escape(self.protocolSent),
             "responseExtracted": util.escape(self.responseExtracted),
-            "response": util.escape(self.response)
+            "response": util.escape(self.response),
+            "config": util.escape(json.dumps(self.config.to_dict(), indent = 4))
         }
         """ "graphStore": util.escape(self.graphStore),
         "graphLabel": util.escape(self.graphLabel),
@@ -116,3 +119,12 @@ class Config:
         self.server_address = config.get("server_address")
         self.port = config.get("port")
         self.directories = config.get("directories")
+
+    def to_dict(self):
+        config_dict = {
+            "alias": self.alias,
+            "number_types": self.number_types,
+            "queries": self.queries,
+            "directories": self.directories
+        }
+        return config_dict

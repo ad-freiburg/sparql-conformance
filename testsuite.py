@@ -88,7 +88,7 @@ class TestSuite:
             row (list): A row from the CSV file representing a single test.
         """
         self.test_count += 1
-        test = TestObject(row, self.config.path_to_test_suite)
+        test = TestObject(row, self.config.path_to_test_suite, self.config)
         if test.graph == "":
             graph_path = "empty.ttl"
             if not os.path.exists(os.path.join(self.config.path_to_test_suite, graph_path)):
@@ -348,6 +348,7 @@ class TestSuite:
         os.makedirs("./results", exist_ok=True)
         file_path = f"./results/{self.name}.json"
         data = {}
+
         for test_format in self.tests:
             for graph in self.tests[test_format]:
                 for test in self.tests[test_format][graph]:
@@ -358,7 +359,19 @@ class TestSuite:
                             self.failed += 1
                         case vars.INTENDED:
                             self.passed_failed += 1
-                    data[test.name] = test.to_dict()
+                    # This will add a number behind the name if the name is not unique
+                    if test.name in data:
+                        i = 1
+                        while True:
+                            i += 1
+                            new_name = f"{test.name} {i}"
+                            if new_name in data:
+                                continue
+                            else:
+                                data[new_name] = test.to_dict()
+                                break 
+                    else:
+                        data[test.name] = test.to_dict()
         data["info"] = {"name": "info",
                                 "passed": self.passed,
                                 "tests": self.test_count,

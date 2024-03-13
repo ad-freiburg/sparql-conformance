@@ -1,19 +1,29 @@
 
 $(document).ready(async function () {
-    var jsonData = await fetchData();
-    console.log(jsonData)
+    var data = await fetchData();
+    var jsonData = data[0];
+    var nameMap = data[1];
     var selectedRun = Object.keys(jsonData)[0];
     $(`#table-select-runs1 tr[data-name=${selectedRun}]`).addClass("row-selected");
     var selectedRun2 = -1;
-    var jsonArray = getTestRun(selectedRun, selectedRun2, jsonData);
+    if (Object.keys(jsonData).length == 2) {
+        selectedRun2 =  Object.keys(jsonData)[1]
+        handleAccordion("collapse-two", false);
+    }
+    var getTestRunResult = getTestRun(selectedRun, selectedRun2, jsonData);
+    var jsonArray = getTestRunResult[0]
+    var compareRunInformation = getTestRunResult[1]
     var currentArray = jsonArray;
     var currentTestName = -1;
-    buildRunTables(jsonData, "", selectedRun, selectedRun2);
+    buildRunTables(jsonData, nameMap, "", selectedRun, selectedRun2);
     buildFilter(jsonArray);
     currentArray = filterTable($("#search-input").val(), jsonArray);
     buildTable(currentArray, currentTestName);
     showCorrectElement(currentTestName, selectedRun2);
 
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    
     $(document).on("click", ".button-toggle", function() {
         $(`#div-${this.id}`).toggleClass("visually-hidden");
     });
@@ -21,30 +31,25 @@ $(document).ready(async function () {
     $(document).on("click", ".form-check-input", function() {
         currentArray = filterTable($("#search-input").val(), jsonArray);
         buildTable(currentArray, currentTestName);
+        updateFilter($("#search-input").val(), jsonArray, currentArray, document.getElementById("accordion-filter").querySelectorAll("input"));
     });
 
     $(".button-toggle-filter").on("click", function() {
         var buttonId = this.id;
-        var value = document.querySelector('input[name="filter-radio"]:checked').value;
-        if (value == "all"){
-            var values = ["status", "error", "type", "group"]
-        }
-        else {
-            var values = [value]
-        }
-        values.forEach(function(v) {
-            var divElem = document.getElementById(`container-filter-${v}`);
-            var checkNodes = divElem.querySelectorAll("input");
-            checkNodes.forEach(function(check) {
-                if (buttonId.endsWith("uncheck")) {
-                    check.checked = false;
-                }
-                else {
-                    check.checked = true;
-                }
-
-            });
+        var value = $(this).attr("value")
+        var divElem = document.getElementById(`container-filter-${value}`);
+        var checkNodes = divElem.querySelectorAll("input");
+        checkNodes.forEach(function(check) {
+            if (buttonId.includes("uncheck")) {
+                check.checked = false;
+            }
+            else {
+                check.checked = true;
+            }
         });
+        currentArray = filterTable($("#search-input").val(), jsonArray);
+        buildTable(currentArray, currentTestName);
+        updateFilter($("#search-input").val(), jsonArray, currentArray, document.getElementById("accordion-filter").querySelectorAll("input"));
     });
 
     $("#button-expand-all").on("click", function() {
@@ -76,11 +81,12 @@ $(document).ready(async function () {
         var value = $(this).val();
         currentArray = filterTable(value, jsonArray);
         buildTable(currentArray, currentTestName);
+        updateFilter(value, jsonArray, currentArray, document.getElementById("accordion-filter").querySelectorAll("input"));
     });
 
     $("#search-input-run").on("keyup", function(){
         var value = $(this).val();
-        buildRunTables(jsonData, value, selectedRun, selectedRun2);
+        buildRunTables(jsonData, nameMap, value, selectedRun, selectedRun2);
     });
 
     $("#button-overview").on("click", function() {
@@ -126,6 +132,7 @@ $(document).ready(async function () {
         }
         currentTestName = testName;
         showCorrectElement(currentTestName, selectedRun2)
+        goBackToOverview();
     });
 
     $("#table-select-runs1").on("click", "tr", function() {
@@ -134,13 +141,16 @@ $(document).ready(async function () {
         $(`#table-select-runs1 tr[data-name=${selectedRun}]`).removeClass("row-selected");
         $(`#table-select-runs1 tr[data-name=${runName}]`).addClass("row-selected");
         selectedRun = runName;
-        jsonArray = getTestRun(selectedRun, selectedRun2, jsonData);
+        getTestRunResult = getTestRun(selectedRun, selectedRun2, jsonData);
+        jsonArray = getTestRunResult[0]
+        compareRunInformation = getTestRunResult[1]
         currentArray = jsonArray;
         currentTestName = -1;
         buildFilter(jsonArray);
         currentArray = filterTable($("#search-input").val(), jsonArray);
         buildTable(currentArray, currentTestName);
-        showCorrectElement(currentTestName, selectedRun2)
+        showCorrectElement(currentTestName, selectedRun2);
+        updateRunSelectionText(selectedRun, selectedRun2, compareRunInformation);
     });
 
     $("#table-select-runs2").on("click", "tr", function() {
@@ -153,16 +163,133 @@ $(document).ready(async function () {
             selectedRun2 = runName;
             $(`#table-select-runs2 tr[data-name=${runName}]`).addClass("row-selected");
         }
-        jsonArray = getTestRun(selectedRun, selectedRun2, jsonData);
+        getTestRunResult = getTestRun(selectedRun, selectedRun2, jsonData);
+        jsonArray = getTestRunResult[0]
+        compareRunInformation = getTestRunResult[1]
         currentArray = jsonArray;
         currentTestName = -1;
         buildFilter(jsonArray);
         currentArray = filterTable($("#search-input").val(),jsonArray);
         buildTable(currentArray, currentTestName);
         showCorrectElement(currentTestName, selectedRun2);
+        updateRunSelectionText(selectedRun, selectedRun2, compareRunInformation);
     });
 
 });
+
+function goBackToOverview(){
+    var buttonOverview = document.getElementById("button-overview");
+    var buttonExpand = document.getElementById("button-expand-all");
+    var buttonCollapse= document.getElementById("button-collapse-all");
+    buttonCollapse.click();
+    buttonOverview.click();
+    buttonExpand.click();
+}
+
+function updateRunSelectionText(selectedRun, selectedRun2, compareRunInformation){
+
+    function generateInfoArrow(label1, label2, count){
+        return `<p class="text-center fs-5 m-0 p-0" data-bs-toggle="tooltip" data-bs-title="David Nig"><label class="text-primary">${label1}</label> &larr; <label class="text-info">prev. ${label2}</label> : ${count}</p>`;
+    }
+
+    function generateAdded(countDict){
+        result = "";
+        for (let key in countDict) {
+            if (countDict[key] != 0){
+                if (key.startsWith("P")) {
+                    label = '<label class="tests-passed">';
+                } else if (key.startsWith("F")) {
+                    label = '<label class="tests-failed">';
+                } else if (key.startsWith("I")) {
+                    label = '<label class="tests-passedFailed">';
+                } else {
+                    label = "<label>";
+                }
+                result += `${label}${countDict[key]}</label> `;
+            }
+        }
+        return result;
+    }
+
+    console.log(compareRunInformation)
+    var paragraphInfo = document.getElementById("run-selection-information");
+    var paragraph = document.getElementById("run-selection-text");
+    paragraph.innerHTML = "";
+    paragraphInfo.innerHTML = "";
+    if (selectedRun2 == -1) {
+        paragraph.innerHTML = `Show test results for <label class="text-primary">${selectedRun}</label>`;
+    } else {
+        paragraph.innerHTML = `Compare <label class="text-primary">${selectedRun}</label> with <label class="text-info">${selectedRun2}</label>`;
+        for (let key in compareRunInformation) {
+            if (compareRunInformation[key] == 0) {
+                continue;
+            } else {
+                label1 = "";
+                label2 = "";
+                if (key.endsWith("P")) {
+                    label1 = "Passed";
+                } else if (key.endsWith("F")) {
+                    label1 = "Failed";
+                } else if (key.endsWith("I")) {
+                    label1 = "Intended";
+                } else if (key.endsWith("N")) {
+                    label1 = "Not tested";
+                }
+                if (key.startsWith("p")) {
+                    label2 = "Passed";
+                } else if (key.startsWith("f")) {
+                    label2 = "Failed";
+                } else if (key.startsWith("i")) {
+                    label2 = "Intended";
+                } else if (key.startsWith("n")) {
+                    label2 = "Not tested";
+                }
+                if (label1 != "" && label2 != "") {
+                    paragraphInfo.innerHTML += generateInfoArrow(label1, label2, compareRunInformation[key]);
+                } else if (key.startsWith("added")) {
+                    result = generateAdded(compareRunInformation[key])
+                    if (result != "") {
+                        paragraphInfo.innerHTML += `<p class="text-center fs-5 m-0 p-0"><label class="text-primary">Added</label>: ${result}</p>`;
+                    }
+                } else if (key.startsWith("deleted") && compareRunInformation[key] > 0) {
+                    paragraphInfo.innerHTML += `<p class="text-center fs-5 m-0 p-0"><label class="text-primary">Deleted</label>: ${compareRunInformation[key]}</p>`;
+                }
+            }
+        }
+    }
+    information = {
+        "deleted": 0,
+        "unchanged": 0
+    };
+}
+
+function isArrayEqual(array1, array2){
+    if (array1.length != array2.length) {
+        return false;
+    }
+    if (array1.length == 0) {
+        return true;
+    }
+    array1.forEach(function(object) {
+        if (!array2.includes(object)){
+            return false;
+        }
+    });
+    return true;
+}
+
+function updateFilter(value, jsonArray, currentArray, nodes){
+    nodes.forEach(function(node) {
+        // Invert checked and see if it changes the table
+        node.checked = !node.checked;
+        if (isArrayEqual(filterTable(value, jsonArray), currentArray)) {
+            node.disabled = true;
+        } else {
+            node.disabled = false;
+        }
+        node.checked = !node.checked;
+    });
+}
 
 function handleAccordion(itemId, collapse) {
     var item = document.getElementById(itemId);
@@ -181,29 +308,26 @@ async function fetchData() {
     var jsonData = {};
     var runs = [];
     var resultsPath = window.location.pathname.replace(/www\/.*/, "results/");
-
+    var nameMap = await fetch(window.location.pathname.replace(/www\/.*/, "name_map.json")).then(response => response.json());
     let data = await fetch(resultsPath).then(response => response.text());
-    console.log(data)
     let fileFetchPromises = $(data).find("a").map(function() {
         var file = $(this).attr("href");
         runs.push(file);
-        console.log(file)
         return fetch(`/results/${file}`).then(response => response.json());
     }).get();
 
     let fileDataArray = await Promise.all(fileFetchPromises);
-    console.log(fileDataArray)
     fileDataArray.forEach((fileData, index) => {
-        console.log(fileData)
         var name = runs[index].replace(".json", "");
         jsonData[name] = fileData;
     });
 
-    return jsonData;
+    return [jsonData, nameMap]
 }
 
 function getTestRun(run1, run2, jsonData) {
     var result = {};
+    information = {};
     if (run1 == -1 || run2 == -1) {
         if (run1 != -1) {
             result = jsonData[run1];
@@ -213,13 +337,15 @@ function getTestRun(run1, run2, jsonData) {
             return;
         }
     } else {
-        result = compare(jsonData[run1], jsonData[run2])
+        compareResult = compare(jsonData[run1], jsonData[run2])
+        result = compareResult[0]
+        information = compareResult[1]
     }
     resultArray = convertObjectToArray(result);
     if (result.hasOwnProperty('info')) {
         resultArray.splice(resultArray.length - 1, 1);
     }
-    return resultArray;
+    return [resultArray, information];
 }
 
 function convertObjectToArray(jsonData) {
@@ -229,7 +355,7 @@ function convertObjectToArray(jsonData) {
     return jsonArray;
 }
 
-function buildRunTables(jsonData, filter, selectedRun, selectedRun2){
+function buildRunTables(jsonData, nameMap, filter, selectedRun, selectedRun2){
     var tableBodies = document.getElementsByClassName("table-body-runs");
     tableBodies[0].innerHTML = "";
     tableBodies[1].innerHTML = "";
@@ -250,7 +376,11 @@ function buildRunTables(jsonData, filter, selectedRun, selectedRun2){
             divRow.classList.add("row");
             var name = document.createElement("div");
             name.classList.add("col");
-            name.innerHTML = keys[i];
+            if (keys[i] in nameMap) {
+                name.innerHTML = nameMap[keys[i]];
+            } else {
+                name.innerHTML = keys[i];
+            }
             divRow.appendChild(name);
             var count = document.createElement("div");
             count.classList.add("col-md-auto");
@@ -271,6 +401,9 @@ function buildRunTables(jsonData, filter, selectedRun, selectedRun2){
 }
 
 function buildTable(jsonArray, currentTestName){
+    var tableCountContainer = document.getElementById("container-table-test-count");
+    tableCountContainer.innerHTML = `Tests found: ${jsonArray.length}`
+    console.log(jsonArray)
     var tableBody = document.getElementById("table-body-tests");
     tableBody.innerHTML = "";
     for (var testNumber in jsonArray) {
@@ -319,38 +452,46 @@ function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2){
         { label: "Test Status", value: testDetails.status, key: "status", line: "True" },
         { label: "Error Type", value: testDetails.errorType, key: "errorType", line: "True" },
     ];
-    if (testDetails.errorType == "RESULTS NOT THE SAME" || testDetails.errorType.includes("Known")) {
-        overviewEntries.push({ label: "Expected Query Result", value: [testDetails.expectedHtml, testDetails.expectedHtmlRed], key: "expectedHtml", line: "False" });
-        overviewEntries.push({ label: "Query Result", value: [testDetails.gotHtml, testDetails.gotHtmlRed], key: "gotHtml", line: "False" });
+
+
+    console.log(testDetails)
+    if (testDetails.typeName == "QueryEvaluationTest" || testDetails.typeName == "CSVResultFormatTest" || testDetails.typeName == "UpdateEvaluationTest") {
+        if (testDetails.status != "Failed" || testDetails.errorType != "RESULTS NOT THE SAME" || testDetails.errorType != "QUERY RESULT FORMAT ERROR") {
+            queryResult = [testDetails.gotHtml, testDetails.gotHtmlRed];
+            expectedResult = [testDetails.expectedHtml, testDetails.expectedHtmlRed];
+            queryKey = ["gotHtml", "gotHtmlRed"];
+            expectedKey = ["expectedHtml", "expectedHtmlRed"];
+        } else {
+            queryResult = testDetails.queryLog;
+            expectedResult = testDetails.resultFile;
+            queryKey = "queryLog";
+            expectedKey = "resultFile";
+        }
         overviewEntries.push({ label: "Index File", value: testDetails.graphFile, key: "graphFile", line: "False" });
         overviewEntries.push({ label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False"  });
+        overviewEntries.push({ label: "Expected Result", value: expectedResult, key: expectedKey, line: "False" });
+        overviewEntries.push({ label: "Query Result", value: queryResult, key: queryKey, line: "False" });
+    } else if (testDetails.typeName == "PositiveSyntaxTest11" || testDetails.typeName == "NegativeSyntaxTest11" || testDetails.typeName == "PositiveUpdateSyntaxTest11" || testDetails.typeName == "NegativeUpdateSyntaxTest11") {
+        overviewEntries.push({ label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False"  });
+        overviewEntries.push({ label: "Query Result", value: testDetails.queryLog, key: "gotHtml", line: "False" });
+    } else if (testDetails.typeName == "ProtocolTest") {
+        overviewEntries.splice(1,1);
+        overviewEntries.push({ label: "Protocol", value: testDetails.protocol, key: "protocol", line: "False"  });
+        overviewEntries.push({ label: "Response", value: testDetails.response, key: "response", line: "False" });
+        overviewEntries.push({ label: "Protocol sent", value: testDetails.protocolSent, key: "protocolSent", line: "False"  });
+        overviewEntries.push({ label: "Response Extracted", value: testDetails.responseExtracted, key: "responseExtracted", line: "False" });
     }
-    if (testDetails.errorType == "QUERY EXCEPTION") {
-        overviewEntries.push({ label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False" });
-        overviewEntries.push({ label: "Query Log", value: testDetails.queryLog, key: "queryLog", line: "False"  });
-    }
-    if (testDetails.errorType == "REQUEST ERROR") {
-        overviewEntries.push({ label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False" });
-        overviewEntries.push({ label: "Query Log", value: testDetails.queryLog, key: "queryLog", line: "False"  });
-    }
-    if (testDetails.errorType == "EXPECTED: QUERY EXCEPTION ERROR") {
-        overviewEntries.push({ label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False" });
-        overviewEntries.push({ label: "Query Log", value: testDetails.queryLog, key: "queryLog", line: "False"  });
-    }
-    if (testDetails.errorType == "Undefined error") {
-        overviewEntries.push({ label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False" });
-        overviewEntries.push({ label: "Query Log", value: testDetails.queryLog, key: "queryLog", line: "False"  });
-    }
+
     if (testDetails.errorType == "INDEX BUILD ERROR") {
-        overviewEntries.push({ label: "Index File", value: testDetails.graphFile, key: "graphFile", line: "False"   });
         overviewEntries.push({ label: "Index Build Log", value: testDetails.indexLog, key: "indexLog", line: "False"  });
     }
     if (testDetails.errorType == "SERVER ERROR") {
         overviewEntries.push({ label: "Server Status", value: testDetails.serverStatus, key: "serverStatus", line: "True" });
         overviewEntries.push({ label: "Server Log", value: testDetails.serverLog, key: "serverLog", line: "False" });
     }
-
     var allEntries = [
+        { label: "Test Name", value: testDetails.name, key: "name", line: "True" },
+        { label: "Error Type", value: testDetails.errorType, key: "errorType", line: "True" },
         { label: "Index File", value: testDetails.graphFile, key: "graphFile", line: "False"  },
         { label: "Index Build Log", value: testDetails.indexLog, key: "indexLog", line: "False"  },
         { label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False"  },
@@ -368,6 +509,7 @@ function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2){
         { label: "Test Feature", value: testDetails.feature, key: "feature", line: "True" },
         { label: "Approval", value: testDetails.approval, key: "approval", line: "True" },
         { label: "Approved by", value: testDetails.approvedBy, key: "approvedBy", line: "True" },
+        { label: "Config", value: testDetails.config, key: "configs", line: "False" }
     ];
 
     if (selectedRun2 == -1){
@@ -390,7 +532,16 @@ function escapeHtml(html) {
 
 function replaceEntries(entries, testDetails){
     entries.forEach(function(entry) {
-        entry.value = testDetails[entry.key + "-run2"];
+        if (Array.isArray(entry.key)) {
+            entry.value = [];
+            for (let keyId in entry.key) {
+                console.log(entry.key[keyId])
+                entry.value.push(testDetails[entry.key[keyId] + "-run2"]);
+            }
+            console.log(entry.value)
+        } else {
+            entry.value = testDetails[entry.key + "-run2"];
+        }
     });
     return entries;
 }
@@ -406,7 +557,7 @@ function buildHTML(entries, id){
                 element.innerHTML += createElement(entry.label, entry.value[0], entry.value[1])
             }
             else {
-                element.innerHTML += createElement(entry.label, entry.value, "")
+                element.innerHTML += createElement(entry.label, entry.value, null)
             }
         }
     });
@@ -450,10 +601,7 @@ function compare(dict1, dict2) {
         "nToP": 0,
         "nToF": 0,
         "nToI": 0,
-        "addedN": 0,
-        "addedP": 0,
-        "addedI": 0,
-        "addedF": 0,
+        "added": {"N": 0, "P": 0, "I": 0, "F": 0},
         "deleted": 0,
         "unchanged": 0
     };
@@ -488,30 +636,25 @@ function compare(dict1, dict2) {
         } else if (key in dict1) {
             switch(dict1[key]["status"]) {
                 case "Passed":
-                    results["addedP"] = results["addedP"] + 1
+                    information["added"]["P"] = information["added"]["P"] + 1
                     break;
                 case "Failed: Intended":
-                    results["addedP"] = results["addedP"] + 1
+                    information["added"]["I"]  = information["added"]["I"]  + 1
                     break;
                 case "Failed":
-                    results["addedP"] = results["addedP"] + 1
+                    information["added"]["F"]  = information["added"]["F"]  + 1
                     break;
                 case "NOT TESTED":
-                    results["addedP"] = results["addedP"] + 1
+                    information["added"]["N"]  = information["added"]["N"] + 1
                     break;
             }
-            console.log("Key in 1:")
-            console.log(key)
             result[key] = copyObject(dict1[key]);
             for (let subKey in result[key]){
                 result[key][subKey + "-run2"] = "Test not part of run!"
             }
         } else {
             information["deleted"] = information["deleted"] + 1
-            console.log("Key in 2:")
-            console.log(key)
             result[key] = copyObject(dict2[key])
-            console.log(result[key])
             for (let subKey in result[key]){
                 result[key][subKey + "-run2"] = result[key][subKey]
                 result[key][subKey] = "Test not part of run!"
@@ -519,11 +662,9 @@ function compare(dict1, dict2) {
             result[key]["name"] = result[key]["name" + "-run2"]
             result[key]["group"] = result[key]["group" + "-run2"]
             result[key]["typeName"] = result[key]["typeName" + "-run2"]
-            console.log(result[key])
         }
     }
-    console.log(information)
-    return result;
+    return [result, information];
 }
 
 function showCorrectElement(currentTestName, selectedRun2){
@@ -554,8 +695,10 @@ function createSingleLineElement(heading, text){
 
 function createElement(heading, text, text2){
     var className = ""
-    if (text2 != ""){
+    var redText = ""
+    if (text2 != null){
         className = "normalText"
+        redText = "redText"
     }
     var id = Math.random().toString(36).slice(2, 11);
     var html = `<div class="row container-info">`;
@@ -563,7 +706,7 @@ function createElement(heading, text, text2){
         html += `<div class="col button">`;
         html += `<button id="${id}" type="button" class="button-toggle btn btn-sm btn-secondary">Expand/Collapse</button></div></div>`;
         html += `<div class="row"><div id="div-${id}" class="col results-wrapper results-wrapper-big visually-hidden"><pre class="${className}">${text}</pre>`;
-        html += `<pre class="redText visually-hidden">${text2}</pre>`;
+        html += `<pre class="${redText} visually-hidden">${text2}</pre>`;
         html += `</div></div>`;
     return html;
 }
