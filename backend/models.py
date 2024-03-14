@@ -15,6 +15,7 @@ RESULTS_NOT_THE_SAME = "RESULTS NOT THE SAME"
 INTENDED_MSG = "Known, intended behaviour that does not comply with SPARQL standard"
 EXPECTED_EXCEPTION = "EXPECTED: QUERY EXCEPTION ERROR"
 FORMAT_ERROR = "QUERY RESULT FORMAT ERROR"
+NOT_SUPPORTED = "CONTENT TYPE NOT SUPPORTED"
 
 #?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?approvedBy ?regime ?graphStore ?graphLabel ?graphData ?actionGraphStore ?actionGraphLabel ?actionGraphData group
 class TestObject: 

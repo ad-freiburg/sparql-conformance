@@ -68,7 +68,7 @@ def element_to_string(element: ET.Element, escaped_xml: str, label: str):
             return highlight_first_occurrence(escaped_xml, escaped_element_str, label)
         return escaped_xml
 
-def generate_highlighted_string_xml(original_xml: str, remaining_tree: ET.ElementTree, red_tree: ET.ElementTree) -> str:
+def generate_highlighted_string_xml(original_xml: str, remaining_tree: ET.ElementTree, red_tree: ET.ElementTree, number_types: list) -> str:
     """
     This method takes an XML string and an ElementTree object representing a subset of the XML. 
     It escapes the XML string for HTML display and then highlights the elements from the 
@@ -96,7 +96,7 @@ def generate_highlighted_string_xml(original_xml: str, remaining_tree: ET.Elemen
     for element in remaining_tree.getroot().findall('.//result'):
         label = "yellow"
         for elem in red_tree.getroot().findall('.//result'):
-            if element == elem:
+            if xml_elements_equal(element, elem, False, {}, number_types, {}):
                 label = "red"
         escaped_xml = element_to_string(element, escaped_xml, label)
 
@@ -116,7 +116,7 @@ def strip_namespace(tree: ET.ElementTree) -> ET.ElementTree:
         elem.tag = elem.tag.partition("}")[-1]
     return tree
 
-def generate_html_for_xml(xml1: str, xml2: str, remaining_tree1: ET.ElementTree, remaining_tree2: ET.ElementTree, red_tree1: ET.ElementTree, red_tree2: ET.ElementTree) -> tuple:
+def generate_html_for_xml(xml1: str, xml2: str, remaining_tree1: ET.ElementTree, remaining_tree2: ET.ElementTree, red_tree1: ET.ElementTree, red_tree2: ET.ElementTree, number_types: list) -> tuple:
     """
     Generates HTML representations for two XML strings with specific elements highlighted.
 
@@ -135,10 +135,10 @@ def generate_html_for_xml(xml1: str, xml2: str, remaining_tree1: ET.ElementTree,
     strip_namespace(remaining_tree2)
     remaining_tree1_string = ET.tostring(remaining_tree1.getroot(), encoding='utf-8').decode("utf-8").replace(" />", "/>").replace("ns0:", "")
     remaining_tree2_string = ET.tostring(remaining_tree2.getroot(), encoding='utf-8').decode("utf-8").replace(" />", "/>").replace("ns0:", "")
-    highlighted_xml1 = generate_highlighted_string_xml(xml1, remaining_tree1, red_tree1)
-    highlighted_xml2 = generate_highlighted_string_xml(xml2, remaining_tree2, red_tree2)
-    highlighted_xml1_only_red = generate_highlighted_string_xml(remaining_tree1_string, remaining_tree1, red_tree1)
-    highlighted_xml2_only_red = generate_highlighted_string_xml(remaining_tree2_string, remaining_tree2, red_tree2)
+    highlighted_xml1 = generate_highlighted_string_xml(xml1, remaining_tree1, red_tree1, number_types)
+    highlighted_xml2 = generate_highlighted_string_xml(xml2, remaining_tree2, red_tree2, number_types)
+    highlighted_xml1_only_red = generate_highlighted_string_xml(remaining_tree1_string, remaining_tree1, red_tree1, number_types)
+    highlighted_xml2_only_red = generate_highlighted_string_xml(remaining_tree2_string, remaining_tree2, red_tree2, number_types)
 
     return highlighted_xml1, highlighted_xml2, highlighted_xml1_only_red, highlighted_xml2_only_red
 
@@ -283,6 +283,6 @@ def compare_xml(expected_xml: str, query_xml: str, alias: dict, number_types: li
                 status = INTENDED
                 error_type = INTENDED_MSG
     
-    expected_string, query_string, expected_string_red, query_string_red = generate_html_for_xml(expected_xml, query_xml, copied_expected_tree, copied_query_tree, expected_tree, query_tree)
+    expected_string, query_string, expected_string_red, query_string_red = generate_html_for_xml(expected_xml, query_xml, copied_expected_tree, copied_query_tree, expected_tree, query_tree, number_types)
 
     return status, error_type, expected_string, query_string, expected_string_red, query_string_red

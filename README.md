@@ -17,7 +17,7 @@ python3 testsuite.py config <server address> <port> <path to testsuite> <path to
 ```
 Example:
 ```
-python3 testsuite.py config http://0.0.0.0 7000 ./testsuite/ ../qlever-code/build/ listOfTests.csv
+python3 testsuite.py config http://0.0.0.0 7000 ./testsuite/ ../qlever-code/build/
 ```
 
 ### Extract the tests

@@ -122,17 +122,20 @@ $(document).ready(async function () {
     });
 
     $("#table-select-tests").on("click", "tr", function() {
-        handleAccordion("collapse-one", true);
-        handleAccordion("collapse-three", false);
-        var testName = $(this).data("name");
-        if (testName != currentTestName) {
-            $("#table-select-tests tr").removeClass("row-selected");
-            $(this).addClass("row-selected");
-            buildTestInformation(testName, jsonArray, selectedRun, selectedRun2);
+        console.log($(this).id)
+        if (this.id != "head") {
+            handleAccordion("collapse-one", true);
+            handleAccordion("collapse-three", false);
+            var testName = $(this).data("name");
+            if (testName != currentTestName) {
+                $("#table-select-tests tr").removeClass("row-selected");
+                $(this).addClass("row-selected");
+                buildTestInformation(testName, jsonArray, selectedRun, selectedRun2);
+            }
+            currentTestName = testName;
+            showCorrectElement(currentTestName, selectedRun2)
+            goBackToOverview();
         }
-        currentTestName = testName;
-        showCorrectElement(currentTestName, selectedRun2)
-        goBackToOverview();
     });
 
     $("#table-select-runs1").on("click", "tr", function() {
@@ -455,13 +458,17 @@ function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2){
 
 
     console.log(testDetails)
+    console.log(testDetails.status)
+    console.log(testDetails.errorType )
     if (testDetails.typeName == "QueryEvaluationTest" || testDetails.typeName == "CSVResultFormatTest" || testDetails.typeName == "UpdateEvaluationTest") {
-        if (testDetails.status != "Failed" || testDetails.errorType != "RESULTS NOT THE SAME" || testDetails.errorType != "QUERY RESULT FORMAT ERROR") {
+        if (testDetails.status != "Failed" || testDetails.errorType == "RESULTS NOT THE SAME" || testDetails.errorType == "QUERY RESULT FORMAT ERROR") {
+            console.log("QUERY")
             queryResult = [testDetails.gotHtml, testDetails.gotHtmlRed];
             expectedResult = [testDetails.expectedHtml, testDetails.expectedHtmlRed];
             queryKey = ["gotHtml", "gotHtmlRed"];
             expectedKey = ["expectedHtml", "expectedHtmlRed"];
         } else {
+            console.log("LOG")
             queryResult = testDetails.queryLog;
             expectedResult = testDetails.resultFile;
             queryKey = "queryLog";

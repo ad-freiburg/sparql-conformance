@@ -4,7 +4,7 @@ import os
 import csv
 import sys
 import json
-from backend.models import TestObject, Config, SERVER_ERROR, FAILED, PASSED, INTENDED, QUERY_EXCEPTION, REQUEST_ERROR, UNDEFINED_ERROR, INDEX_BUILD_ERROR, SERVER_ERROR, NOT_TESTED, RESULTS_NOT_THE_SAME, INTENDED_MSG, EXPECTED_EXCEPTION
+from backend.models import TestObject, Config, SERVER_ERROR, FAILED, PASSED, INTENDED, QUERY_EXCEPTION, REQUEST_ERROR, UNDEFINED_ERROR, INDEX_BUILD_ERROR, SERVER_ERROR, NOT_TESTED, RESULTS_NOT_THE_SAME, INTENDED_MSG, EXPECTED_EXCEPTION, NOT_SUPPORTED
 import backend.models as vars
 from backend.extract_tests import extract_tests
 from backend.xml_tools import compare_xml
@@ -195,6 +195,9 @@ class TestSuite:
             error_type = QUERY_EXCEPTION
         elif "HTTP Request" in query_response[1]:
             error_type = REQUEST_ERROR
+            query_log = query_response[1]
+        elif "not supported" in query_response[1] and "content type" in query_response[1]:    
+            error_type = NOT_SUPPORTED
             query_log = query_response[1]
         else:    
             error_type = UNDEFINED_ERROR
