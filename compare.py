@@ -81,6 +81,7 @@ def compare_dicts(old_run, new_run):
     return results
 
 def main():
+    msg = ""
     status = 0
     args = sys.argv[1:]
     workflow = {"master": ""}
@@ -103,13 +104,14 @@ def main():
                     status = 1
     
         if status != 0:
-            print("New run contains test that previously 'Passed' and now don't.")
+            msg = "New run contains test that previously 'Passed' and now don't."
+            print(msg)
         else:
             workflow["master"] = args[0]
             with open("workflow.json", "w") as file:
                 json.dump(workflow, file, indent=4)
-
-        print("Link to compare runs: https://sirdnarch.github.io/test-web/index-" + args[0] + "-" + old_run + ".html")
+        link = "Link to compare runs: https://sirdnarch.github.io/test-web/index-" + args[0] + "-" + old_run + ".html"
+        print(link)
         os.system("cp ../test-web/index.html ../test-web/index-" + args[0] + "-" + old_run + ".html")
     else:
         workflow["master"] = args[0]
@@ -118,6 +120,8 @@ def main():
         print("New run")
         print("Link to look at run: https://sirdnarch.github.io/test-web/index.html")
     os.system(f'echo "status={status}" >> $GITHUB_ENV')
+    os.system(f'echo "msg={msg}" >> $GITHUB_ENV')
+    os.system(f'echo "link={link}" >> $GITHUB_ENV')
 
 if __name__ == "__main__":
     main()
