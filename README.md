@@ -13,7 +13,7 @@ You need too compile the [QLever code](https://github.com/ad-freiburg/qlever) an
 Before you can run the test suite you have to setup the config. To do this run the following command.
 
 ```
-python3 testsuite.py config <server address> <port> <path to testsuite> <path to the qlever binaries> <file name for test list>
+python3 testsuite.py config <server address> <port> <path to testsuite> <path to the qlever binaries>
 ```
 Example:
 ```
