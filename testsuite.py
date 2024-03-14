@@ -368,6 +368,7 @@ class TestSuite:
                             if new_name in data:
                                 continue
                             else:
+                                test.name = new_name
                                 data[new_name] = test.to_dict()
                                 break 
                     else:

@@ -83,12 +83,12 @@ def compare_dicts(old_run, new_run):
 def main():
     args = sys.argv[1:]
     workflow = {"master": ""}
-    with open("workflow.json", "r") as file:
+    with open("../test-web/workflow.json", "r") as file:
         workflow = json.load(file)
     old_run = workflow["master"]
 
     if old_run != "":
-        with open("./results/" + old_run + ".json", "r") as file:
+        with open("../test-web/results/" + old_run + ".json", "r") as file:
             f1 = json.load(file)
         with open("./results/" + args[0] + ".json", "r") as file:
             f2 = json.load(file)
@@ -114,7 +114,7 @@ def main():
         sys.exit(status)
     else:
         workflow["master"] = args[0]
-        with open("workflow.json", "w") as file:
+        with open("../test-web/workflow.json", "w") as file:
             json.dump(workflow, file, indent=4)
         print("New run")
         print("Link to look at run: https://sirdnarch.github.io/test-web/index.html")
