@@ -108,7 +108,7 @@ def main():
             print(msg)
         else:
             workflow["master"] = args[0]
-            with open("workflow.json", "w") as file:
+            with open("../test-web/workflow.json", "w") as file:
                 json.dump(workflow, file, indent=4)
         link = "Link to compare runs: https://sirdnarch.github.io/test-web/index-" + args[0] + "-" + old_run + ".html"
         print(link)
