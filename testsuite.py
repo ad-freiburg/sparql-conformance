@@ -321,7 +321,7 @@ class TestSuite:
                 if status == PASSED:
                     if not self.prepare_test_environment(graph_path, graphs_list_of_tests[graph]):
                         break
-                    status, error_type, extracted_expected_responses, extracted_sent_requests, got_responses = run_protocol_test(comment, self.config.server_address, self.config.port)
+                    status, error_type, extracted_expected_responses, extracted_sent_requests, got_responses = run_protocol_test(test, comment, self.config.server_address, self.config.port)
                     qlever.stop_server(self.config.command_stop_server)
                     qlever.remove_index(self.config.command_remove_index)
                     if os.path.exists("./TestSuite.server-log.txt"):
@@ -343,6 +343,7 @@ class TestSuite:
         self.run_update_tests(self.tests["Update"])
         self.run_syntax_tests(self.tests["Syntax"])
         self.run_protocol_tests(self.tests["Protocol"])
+        self.run_protocol_tests(self.tests["GraphStoreProtocol"])
 
     def generate_json_file(self):
         """
@@ -389,15 +390,15 @@ class TestSuite:
 def main():
     args = sys.argv[1:]
     if len(args) < 1:
-        print(f"  Usage to create config: python3 {sys.argv[0]} config <server address> <port> <path to testsuite> <path to the qlever binaries>\n  Usage to extract tests: python3 {sys.argv[0]} extract \n  Usage to run tests: python3 {sys.argv[0]} <name for the test suite run>")
+        print(f"  Usage to create config: python3 {sys.argv[0]} config <server address> <port> <path to testsuite> <path to the qlever binaries>  <graph store implementation host> <path of the URL of the graph store> <URL returned in the Location HTTP header>\n  Usage to extract tests: python3 {sys.argv[0]} extract \n  Usage to run tests: python3 {sys.argv[0]} <name for the test suite run>")
         return
     
     if args[0] == "config":
-        if len(args) == 5:
+        if len(args) == 8:
             print(f"Create basic config.")
-            config_manager.create_config(args[1], args[2], args[3], args[4])
+            config_manager.create_config(args[1], args[2], args[3], args[4], args[5], args[6], args[7])
         else:
-            print(f"Usage to create config: python3 {sys.argv[0]} config <server address> <port> <path to testsuite> <path to the qlever binaries>")
+            print(f"Usage to create config: python3 {sys.argv[0]} config <server address> <port> <path to testsuite> <path to the qlever binaries> <graph store implementation host> <path of the URL of the graph store> <URL returned in the Location HTTP header>")
             return
 
     config = config_manager.initialize_config()
@@ -421,7 +422,7 @@ def main():
         test_suite.run()
         test_suite.generate_json_file()
     elif args[0] != "config" and args[0] != "extract":
-        print(f"  Usage to create config: python3 {sys.argv[0]} config <server address> <port> <path to testsuite> <path to binaries> \n  Usage to extract tests: python3 {sys.argv[0]} extract \n  Usage to run tests: python3 {sys.argv[0]} <name for the test suite run>")
+        print(f"  Usage to create config: python3 {sys.argv[0]} config <server address> <port> <path to testsuite> <path to binaries> <graph store implementation host> <path of the URL of the graph store> <URL returned in the Location HTTP header> \n  Usage to extract tests: python3 {sys.argv[0]} extract \n  Usage to run tests: python3 {sys.argv[0]} <name for the test suite run>")
         return
     print("Done!")
 

@@ -3,7 +3,7 @@ import os
 from backend.json_tools import write_json_file, read_json_file
 from backend.util import path_exists
 
-def create_config(server_address: str, port: str, path_to_testsuite: str, path_to_binaries: str) -> bool:
+def create_config(server_address: str, port: str, path_to_testsuite: str, path_to_binaries: str, host: str, graphstore: str, newpath: str) -> bool:
     """
     Create the config file.
     """
@@ -13,6 +13,9 @@ def create_config(server_address: str, port: str, path_to_testsuite: str, path_t
         return False
     directories = [directory for directory in os.listdir(path_to_testsuite) if os.path.isdir(os.path.join(path_to_testsuite, directory)) and os.path.isfile(os.path.join(path_to_testsuite, directory, "manifest.ttl"))]
     config = {
+    "HOST": host,
+    "GRAPHSTORE":  graphstore,
+    "NEWPATH": newpath,
     "command_index": f"{path_to_index_builder} -F ttl -s TestSuite.settings.json -i TestSuite -f ",
     "command_start_server": f"{path_to_server_main} -i TestSuite -j 8 -p {port} > TestSuite.server-log.txt",
     "command_stop_server": f"pkill -f '{path_to_server_main} -i [^ ]*TestSuite'",
@@ -21,7 +24,7 @@ def create_config(server_address: str, port: str, path_to_testsuite: str, path_t
     "port": port,
     "path_to_testsuite": path_to_testsuite,
     "path_to_binaries": path_to_binaries,
-    "queries": ["Query.rq", "Syntax.rq", "Update.rq", "Format.rq", "Protocol.rq", "Service.rq"],
+    "queries": ["Query.rq", "Syntax.rq", "Update.rq", "Format.rq", "Protocol.rq", "Service.rq", "GraphStoreProtocol.rq"],
     "directories": directories,
     "alias": {            
             "http://www.w3.org/2001/XMLSchema#integer": "http://www.w3.org/2001/XMLSchema#int",

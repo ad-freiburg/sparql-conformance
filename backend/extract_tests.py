@@ -12,7 +12,9 @@ def extract_tests(config: Config):
     Parameters:
         output_csv_path: Path to the output CSV file.
     """
-    csv_rows = {"Query.rq": [], "Syntax.rq": [], "Protocol.rq": [], "Update.rq": [], "Format.rq": [], "Service.rq": []}
+    csv_rows = {}
+    for query in config.queries:
+        csv_rows[query] = []
 
     for path in config.directories:
         print("Extracting tests from: " + path)

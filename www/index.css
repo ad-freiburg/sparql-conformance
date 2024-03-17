@@ -41,10 +41,14 @@
 .filter-row{
     padding-top: 0.25rem !important;
     padding-bottom: 0.25rem !important;
+    width: 60% !important;
 }
 .container-select-runs{
     overflow-y: auto;
     height: 100%;
+}
+.card-body{
+    overflow-y: scroll;
 }
 .container-select-test{
     overflow-y: auto;
@@ -69,6 +73,33 @@
 .tests-failed{
     color: red;
 }
+.arrow {
+    border: solid black;
+    border-width: 0 3px 3px 0;
+    display: inline-block;
+    padding: 3px;
+    margin-left: 0.3rem;
+  }
+.right {
+    transform: rotate(-45deg);
+    -webkit-transform: rotate(-45deg);
+}
+.left {
+    transform: rotate(135deg);
+    -webkit-transform: rotate(135deg);
+}
+.up {
+    transform: rotate(-135deg);
+    -webkit-transform: rotate(-135deg);
+}
+.down {
+    transform: rotate(45deg);
+    -webkit-transform: rotate(45deg);
+}
+.link-collapse {
+    text-decoration: none;
+    color: black;
+}
 #toggles{
     padding: 1rem;
 }
@@ -78,4 +109,18 @@
 }
 #run-selection-text{
     padding-top: 0.5rem !important;
+}
+#container-collapse-two{
+    padding-left: 14rem;
+    padding-right: 14rem;
+}
+.container-filter-row{
+    max-width: 50%;
+}
+#container-main{
+    width: 96%;
+}
+thead th {
+    position: sticky;
+    top: 0;
 }

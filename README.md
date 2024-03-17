@@ -13,11 +13,11 @@ You need too compile the [QLever code](https://github.com/ad-freiburg/qlever) an
 Before you can run the test suite you have to setup the config. To do this run the following command.
 
 ```
-python3 testsuite.py config <server address> <port> <path to testsuite> <path to the qlever binaries>
+python3 testsuite.py config <server address> <port> <path to testsuite> <path to the qlever binaries>  <graph store implementation host> <path of the URL of the graph store> <URL returned in the Location HTTP header>
 ```
 Example:
 ```
-python3 testsuite.py config http://0.0.0.0 7000 ./testsuite/ ../qlever-code/build/
+python3 testsuite.py config http://0.0.0.0 7000 ./testsuite/ ../qlever-code/build/ localhost sparql sparql
 ```
 
 ### Extract the tests

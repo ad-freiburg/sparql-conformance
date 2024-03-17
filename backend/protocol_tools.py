@@ -1,6 +1,7 @@
 import telnetlib as telnet
 import re
-from backend.models import FAILED, PASSED, RESULTS_NOT_THE_SAME
+from backend.models import TestObject, FAILED, PASSED, RESULTS_NOT_THE_SAME
+from backend.rdf_tools import compare_ttl
 
 def prepare_request(request_with_reponse: str) -> str:
     request = request_with_reponse.split("#### Response")[0]
@@ -13,7 +14,7 @@ def prepare_request(request_with_reponse: str) -> str:
         request_lines[index] = line
         if not line and not before_header and index_line_between == 0:
             index_line_between = index
-        if line.startswith("POST") or line.startswith("GET") or line.startswith("PUT"):
+        if line.startswith("POST") or line.startswith("GET") or line.startswith("PUT") or line.startswith("DELETE") or line.startswith("HEAD"):
             before_header = False
             index_header = index
         if line.startswith("GET") and not line.endswith("HTTP/1.1"):
@@ -29,23 +30,26 @@ def prepare_request(request_with_reponse: str) -> str:
 def prepare_response(request_with_reponse: str) -> str:
     response = {"status_codes" : [], "content_types" : []}
     response_string = request_with_reponse.split("#### Response")[1]
-    response_lines = [x.strip() for x in response_string.splitlines() if x]
-    pattern = r"\dxx"
+    response_lines = [x.strip() for x in response_string.splitlines() if x] 
     for line in response_lines:
-        if line.endswith("response") or re.search(pattern, line) is not None:
+        if line.endswith("response") or re.search(r"\dxx", line) is not None:
             line = line.replace("response", "")
             status_codes = line.strip().split("or")
             for status_code in status_codes:
                 response["status_codes"].append(status_code.strip())
+        if re.search(r"^\d\d\d ", line) is not None:
+            response["status_codes"].append(re.search(r"^\d\d\d ", line).group(0))
         if line.startswith("Content-Type:"):
             line = line.replace("Content-Type:", "")
             content_types = line.strip().split("or")
             for content_type in content_types:
-                response["content_types"].append(content_type.strip())
+                response["content_types"].append(content_type.strip().split(";")[0])
         if line.startswith("true"):
             response["result"] = "true"
         if line.startswith("false"):
             response["result"] = "false"
+    if "text/turtle" in response["content_types"] and response.get("result") is None:
+        response["result"] = "\n\n".join(response_string.split("\n\n")[2:])
     return response
 
 def compare_response(expected_response: dict, got_response: str) -> bool:
@@ -73,26 +77,33 @@ def compare_response(expected_response: dict, got_response: str) -> bool:
 
     if expected_response.get("result") is None or got_response.find(expected_response["result"]) != -1:
         result_match = True
-
-
+    if "text/turtle" in expected_response.get("content_types") and status_code_match and content_type_match:
+        response_ttl = "\n\n".join(got_response.split("\n\n")[1:])
+        status, error_type, expected_string, query_string, expected_string_red, query_string_red = compare_ttl(expected_response["result"], response_ttl)
+        if status == "Passed":
+            result_match = True
     return status_code_match and content_type_match and result_match
 
-def run_protocol_test(test: str, server_address: str, port: str) -> tuple:
+def run_protocol_test(test: TestObject, test_protocol: str, server_address: str, port: str) -> tuple:
     server_address = "localhost"
     result = FAILED
     error_type = RESULTS_NOT_THE_SAME
     status = []
-    if "followed by" in test:
-        test_request_split = test.split("followed by")
-    elif test.count("#### Request") > 1:
-        test_request_split = [line for line in test.split("#### Request") if len(line) > 2]
+    if "followed by" in test_protocol:
+        test_request_split = test_protocol.split("followed by")
+    elif test_protocol.count("#### Request") > 1:
+        test_request_split = [line for line in test_protocol.split("#### Request") if len(line) > 2]
     else: 
-        test_request_split = [test]
+        test_request_split = [test_protocol]
     requests = []
     responses = []
     got_responses = []
 
     for request_with_reponse in test_request_split:
+        if test.typeName == "GraphStoreProtocolTest":
+            request_with_reponse = request_with_reponse.replace("$HOST$", test.config.HOST)
+            request_with_reponse = request_with_reponse.replace("$GRAPHSTORE$", test.config.GRAPHSTORE)
+            request_with_reponse = request_with_reponse.replace("$NEWPATH$", test.config.NEWPATH)
         request_head, reques_body = prepare_request(request_with_reponse)
         requests.append(request_head + reques_body)
         response = prepare_response(request_with_reponse)

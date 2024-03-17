@@ -95,7 +95,7 @@
                 </button>
               </h2>
               <div id="collapse-two" class="accordion-collapse collapse">
-                <div class="accordion-body">
+                <div id="container-collapse-two" class="accordion-body">
                   <div class="container-filter row m-0 py-4">
                     <div class="accordion" id="accordion-filter">
                       <div class="accordion-item">
@@ -105,14 +105,14 @@
                           </button>
                         </h3>
                         <div id="collapse-filter" class="accordion-collapse collapse">
-                          <div class="accordion-body">
+                          <div id="container-filter" class="row justify-content-center accordion-body">
                             <div class="row filter-row">
                               <div class="col-2">
                                 <div class="row">
-                                  <div class="col-4">
+                                  <div class="col">
                                     Status
                                   </div>
-                                  <div class="col-8">
+                                  <div class="col-auto">
                                     <button id="button-filter-check-status" value="status" type="button" class="btn btn-sm btn-primary button-toggle-filter">Check</button>
                                     <button id="button-filter-uncheck-status" value="status" type="button" class="btn btn-sm btn-primary button-toggle-filter">Uncheck</button>
                                   </div>
@@ -124,10 +124,10 @@
                             <div class="row filter-row">
                               <div class="col-2">
                                 <div class="row">
-                                  <div class="col-4">
+                                  <div class="col">
                                     Error Type
                                   </div>
-                                  <div class="col-8">
+                                  <div class="col-auto">
                                     <button id="button-filter-check-errorType" value="error" type="button" class="btn btn-sm btn-primary button-toggle-filter">Check</button>
                                     <button id="button-filter-uncheck-errorType" value="error" type="button" class="btn btn-sm btn-primary button-toggle-filter">Uncheck</button>
                                   </div>
@@ -139,10 +139,10 @@
                             <div class="row filter-row">
                               <div class="col-2">
                                 <div class="row">
-                                  <div class="col-4">
+                                  <div class="col">
                                     Test Type
                                   </div>
-                                  <div class="col-8">
+                                  <div class="col-auto">
                                     <button id="button-filter-check-testType" value="type" type="button" class="btn btn-sm btn-primary button-toggle-filter">Check</button>
                                     <button id="button-filter-uncheck-testType" value="type" type="button" class="btn btn-sm btn-primary button-toggle-filter">Uncheck</button>
                                   </div>
@@ -154,10 +154,10 @@
                             <div class="row filter-row">
                               <div class="col-2">
                                 <div class="row">
-                                  <div class="col-4">
+                                  <div class="col">
                                     Test Group
                                   </div>
-                                  <div class="col-8">
+                                  <div class="col-auto">
                                     <button id="button-filter-check-group" value="group" type="button" class="btn btn-sm btn-primary button-toggle-filter">Check</button>
                                     <button id="button-filter-uncheck-group" value="group" type="button" class="btn btn-sm btn-primary button-toggle-filter">Uncheck</button>
                                   </div>
@@ -207,6 +207,7 @@
                       <button id="button-details" type="button" class="btn btn-primary">Details</button>
                     </div>
                   </div>
+                  <div id="test-info-header" class="text-center fs-3 fw-bold visually-hidden"></div>
                   <div id="toggles" class="d-grid align-middle gap-2 d-md-flex justify-content-md-end">
                     <button id="button-expand-all" class="btn btn-primary me-md-2" type="button">Expand all</button>
                     <button id="button-collapse-all" class="btn btn-primary me-md-2" type="button">Collapse all</button>
@@ -214,14 +215,14 @@
                   </div>
                   <div id="compare" class="row visually-hidden border">
                     <div class="col-6" id="results1">
-                      <h3 id="heading-result1"></h3>
+                      <p id="heading-result1" class="text-center fs-3 fs-bold text-primary"></p>
                       <div id="container-test-overview-1">
                       </div>
                       <div id="container-test-details-1" class="visually-hidden">
                       </div>
                     </div>
                     <div class="col-6" id="results2">
-                      <h3 id="heading-result2"></h3>
+                      <p id="heading-result2" class="text-center fs-3 fs-bold text-info"></p>
                       <div id="container-test-overview-2">
                       </div>
                       <div id="container-test-details-2" class="visually-hidden">

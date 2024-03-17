@@ -20,12 +20,22 @@ $(document).ready(async function () {
     currentArray = filterTable($("#search-input").val(), jsonArray);
     buildTable(currentArray, currentTestName);
     showCorrectElement(currentTestName, selectedRun2);
-
-    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
     
     $(document).on("click", ".button-toggle", function() {
         $(`#div-${this.id}`).toggleClass("visually-hidden");
+    });
+
+    $(document).on("click", ".link-collapse", function() {
+        var element = document.getElementById(`${this.id}`);
+        var pElement = element.querySelectorAll("p")[0];
+        var arrowElement = pElement.querySelectorAll("i")[0];
+        if (arrowElement.classList.contains("up")) {
+            arrowElement.classList.remove("up");
+            arrowElement.classList.add("down");
+        } else {
+            arrowElement.classList.remove("down");
+            arrowElement.classList.add("up");   
+        }
     });
 
     $(document).on("click", ".form-check-input", function() {
@@ -53,16 +63,22 @@ $(document).ready(async function () {
     });
 
     $("#button-expand-all").on("click", function() {
-        var divNodes = document.querySelectorAll(`div.results-wrapper-big`);
+        var divNodes = document.querySelectorAll(`a.link-collapse`);
         divNodes.forEach(function(div) {
-            div.classList.remove("visually-hidden");
+            var element = document.getElementById(`${div.id}`);
+            if (element.classList.contains('collapsed')) {
+                element.click();
+            }
         });
     });
 
     $("#button-collapse-all").on("click", function() {
-        var divNodes = document.querySelectorAll(`div.results-wrapper-big`);
+        var divNodes = document.querySelectorAll(`a.link-collapse`);
         divNodes.forEach(function(div) {
-            div.classList.add("visually-hidden");
+            var element = document.getElementById(`${div.id}`);
+            if (!element.classList.contains('collapsed')) {
+                element.click();
+            }
         });
     });
 
@@ -122,7 +138,6 @@ $(document).ready(async function () {
     });
 
     $("#table-select-tests").on("click", "tr", function() {
-        console.log($(this).id)
         if (this.id != "head") {
             handleAccordion("collapse-one", true);
             handleAccordion("collapse-three", false);
@@ -183,8 +198,6 @@ $(document).ready(async function () {
 function goBackToOverview(){
     var buttonOverview = document.getElementById("button-overview");
     var buttonExpand = document.getElementById("button-expand-all");
-    var buttonCollapse= document.getElementById("button-collapse-all");
-    buttonCollapse.click();
     buttonOverview.click();
     buttonExpand.click();
 }
@@ -214,7 +227,6 @@ function updateRunSelectionText(selectedRun, selectedRun2, compareRunInformation
         return result;
     }
 
-    console.log(compareRunInformation)
     var paragraphInfo = document.getElementById("run-selection-information");
     var paragraph = document.getElementById("run-selection-text");
     paragraph.innerHTML = "";
@@ -406,7 +418,6 @@ function buildRunTables(jsonData, nameMap, filter, selectedRun, selectedRun2){
 function buildTable(jsonArray, currentTestName){
     var tableCountContainer = document.getElementById("container-table-test-count");
     tableCountContainer.innerHTML = `Tests found: ${jsonArray.length}`
-    console.log(jsonArray)
     var tableBody = document.getElementById("table-body-tests");
     tableBody.innerHTML = "";
     for (var testNumber in jsonArray) {
@@ -443,32 +454,41 @@ function buildTable(jsonArray, currentTestName){
 }
 
 function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2){
+    var testDetails = jsonArray.find((test) => test.name === testName);
+    if (selectedRun2 != -1) {
+        var run1Heading = document.getElementById("heading-result1");
+        var run2Heading = document.getElementById("heading-result2");
+        run1Heading.innerHTML = selectedRun;
+        run2Heading.innerHTML = selectedRun2;
+    }
+    var header = document.getElementById("test-info-header");
+    var labelClass = "tests-passed";
+    switch (testDetails.status) {
+        case "Failed":
+            labelClass = "tests-failed";
+            break;
+        case "Failed: Intended":
+            labelClass = "tests-passedFailed";
+            break;
+    }
+    header.innerHTML = `<p>${testDetails.name}</p><p><label class="${labelClass}">${testDetails.status}</label> ${testDetails.errorType}</p>`;
+
     var buttonNodes = document.querySelectorAll(`#buttons-text input`);
     buttonNodes.forEach(function(node) {
         node.checked = true;
     });
 
-    var testDetails = jsonArray.find((test) => test.name === testName);
     var overviewEntries = [
-        { label: "Test Name", value: testDetails.name, key: "name", line: "True" },
-        { label: "Comment", value: testDetails.comment, key: "comment", line: "True" },
-        { label: "Test Status", value: testDetails.status, key: "status", line: "True" },
-        { label: "Error Type", value: testDetails.errorType, key: "errorType", line: "True" },
+        { label: "Comment", value: testDetails.comment, key: "comment", line: "True" }
     ];
 
-
-    console.log(testDetails)
-    console.log(testDetails.status)
-    console.log(testDetails.errorType )
     if (testDetails.typeName == "QueryEvaluationTest" || testDetails.typeName == "CSVResultFormatTest" || testDetails.typeName == "UpdateEvaluationTest") {
         if (testDetails.status != "Failed" || testDetails.errorType == "RESULTS NOT THE SAME" || testDetails.errorType == "QUERY RESULT FORMAT ERROR") {
-            console.log("QUERY")
             queryResult = [testDetails.gotHtml, testDetails.gotHtmlRed];
             expectedResult = [testDetails.expectedHtml, testDetails.expectedHtmlRed];
             queryKey = ["gotHtml", "gotHtmlRed"];
             expectedKey = ["expectedHtml", "expectedHtmlRed"];
         } else {
-            console.log("LOG")
             queryResult = testDetails.queryLog;
             expectedResult = testDetails.resultFile;
             queryKey = "queryLog";
@@ -481,8 +501,8 @@ function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2){
     } else if (testDetails.typeName == "PositiveSyntaxTest11" || testDetails.typeName == "NegativeSyntaxTest11" || testDetails.typeName == "PositiveUpdateSyntaxTest11" || testDetails.typeName == "NegativeUpdateSyntaxTest11") {
         overviewEntries.push({ label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False"  });
         overviewEntries.push({ label: "Query Result", value: testDetails.queryLog, key: "gotHtml", line: "False" });
-    } else if (testDetails.typeName == "ProtocolTest") {
-        overviewEntries.splice(1,1);
+    } else if (testDetails.typeName == "ProtocolTest" || testDetails.typeName == "GraphStoreProtocolTest") {
+        overviewEntries.splice(0,0);
         overviewEntries.push({ label: "Protocol", value: testDetails.protocol, key: "protocol", line: "False"  });
         overviewEntries.push({ label: "Response", value: testDetails.response, key: "response", line: "False" });
         overviewEntries.push({ label: "Protocol sent", value: testDetails.protocolSent, key: "protocolSent", line: "False"  });
@@ -497,8 +517,6 @@ function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2){
         overviewEntries.push({ label: "Server Log", value: testDetails.serverLog, key: "serverLog", line: "False" });
     }
     var allEntries = [
-        { label: "Test Name", value: testDetails.name, key: "name", line: "True" },
-        { label: "Error Type", value: testDetails.errorType, key: "errorType", line: "True" },
         { label: "Index File", value: testDetails.graphFile, key: "graphFile", line: "False"  },
         { label: "Index Build Log", value: testDetails.indexLog, key: "indexLog", line: "False"  },
         { label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False"  },
@@ -542,10 +560,8 @@ function replaceEntries(entries, testDetails){
         if (Array.isArray(entry.key)) {
             entry.value = [];
             for (let keyId in entry.key) {
-                console.log(entry.key[keyId])
                 entry.value.push(testDetails[entry.key[keyId] + "-run2"]);
             }
-            console.log(entry.value)
         } else {
             entry.value = testDetails[entry.key + "-run2"];
         }
@@ -557,15 +573,11 @@ function buildHTML(entries, id){
     var element = document.getElementById(id);
     element.innerHTML = ""
     entries.forEach(entry => {
-        if (entry.line == "True"){
-            element.innerHTML += createSingleLineElement(entry.label, entry.value)
-        } else {
-            if (Array.isArray(entry.value)) {
-                element.innerHTML += createElement(entry.label, entry.value[0], entry.value[1])
-            }
-            else {
-                element.innerHTML += createElement(entry.label, entry.value, null)
-            }
+        if (Array.isArray(entry.value)) {
+            element.innerHTML += createInfoElement(entry.label, entry.value[0], entry.value[1])
+        }
+        else {
+            element.innerHTML += createInfoElement(entry.label, entry.value, null)
         }
     });
 }
@@ -680,9 +692,11 @@ function showCorrectElement(currentTestName, selectedRun2){
     $("#toggles").addClass("visually-hidden");
     $("#compare").addClass("visually-hidden");
     $("#single").addClass("visually-hidden");
+    $("#test-info-header").addClass("visually-hidden");
     if (currentTestName == -1) {
         $("#nothing").removeClass("visually-hidden");
     } else {
+        $("#test-info-header").removeClass("visually-hidden");
         $("#buttons").removeClass("visually-hidden");
         $("#toggles").removeClass("visually-hidden");
         if (selectedRun2 == -1) {
@@ -693,28 +707,22 @@ function showCorrectElement(currentTestName, selectedRun2){
     }
 }
 
-function createSingleLineElement(heading, text){
-    var html = '<div class="row container-info">';
-        html += `<div class="col heading"><strong>${heading}:</strong></div>`
-        html += `<div class="col results-wrapper"><pre>${text}</pre></div>`;
-    return html += '</div>';
-}
-
-function createElement(heading, text, text2){
+function createInfoElement(heading, text, text2){
     var className = ""
-    var redText = ""
     if (text2 != null){
         className = "normalText"
-        redText = "redText"
     }
     var id = Math.random().toString(36).slice(2, 11);
-    var html = `<div class="row container-info">`;
-        html += `<div class="col"><strong>${heading}:</strong></div>`;
-        html += `<div class="col button">`;
-        html += `<button id="${id}" type="button" class="button-toggle btn btn-sm btn-secondary">Expand/Collapse</button></div></div>`;
-        html += `<div class="row"><div id="div-${id}" class="col results-wrapper results-wrapper-big visually-hidden"><pre class="${className}">${text}</pre>`;
-        html += `<pre class="${redText} visually-hidden">${text2}</pre>`;
-        html += `</div></div>`;
+    var html = `<div class="row container-info justify-content-center">`;
+    html += `<div class="col-auto align-self-center">`
+    html += `<a id="a-${id}" class="link-collapse" data-bs-toggle="collapse" href="#c-${id}" role="button" aria-expanded="true" aria-controls="c-${id}">`;
+    html += `<p class="text-center"><strong>${heading} </strong><i class="arrow up"></i></p></a>`;
+    html += `<div class="collapse show" id="c-${id}"><div class="card card-body">`;
+    html += `<pre class="${className}">${text}</pre>`
+    if (text2 != null){
+        html += `<pre class="redText visually-hidden">${text2}</pre>`
+    }
+    html += `</div></div></div></div>`
     return html;
 }
 

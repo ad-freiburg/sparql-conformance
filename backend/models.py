@@ -108,6 +108,9 @@ class TestObject:
        
 class Config:
     def __init__(self, config):
+        self.HOST = config.get("HOST")
+        self.GRAPHSTORE = config.get("GRAPHSTORE")
+        self.NEWPATH = config.get("NEWPATH")
         self.alias = config.get("alias")
         self.number_types = config.get("number_types")
         self.path_to_test_suite = config.get("path_to_testsuite")
@@ -126,6 +129,9 @@ class Config:
             "alias": self.alias,
             "number_types": self.number_types,
             "queries": self.queries,
-            "directories": self.directories
+            "directories": self.directories,
+            "HOST" : self.HOST,
+            "GRAPHSTORE" : self.GRAPHSTORE,
+            "NEWPATH" : self.NEWPATH
         }
         return config_dict
