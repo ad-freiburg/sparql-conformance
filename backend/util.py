@@ -1,10 +1,13 @@
 import re
 import os
+
+
 def path_exists(path):
     if not os.path.exists(path):
         print(f"{path} does not exist!")
         return False
     return True
+
 
 def is_number(s):
     try:
@@ -12,6 +15,7 @@ def is_number(s):
         return True
     except ValueError:
         return False
+
 
 def escape(str: str) -> str:
     """
@@ -23,14 +27,25 @@ def escape(str: str) -> str:
     Returns:
         str: Escaped version of the input.
     """
-    return str.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('\"', "&quot;").replace("'", "&apos;")
+    return str.replace(
+        "&",
+        "&amp;").replace(
+        "<",
+        "&lt;").replace(
+            ">",
+            "&gt;").replace(
+                '\"',
+                "&quot;").replace(
+                    "'",
+        "&apos;")
+
 
 def read_file(file_path: str) -> str:
     """
     Reads and returns the content of a file.
-    
+
     If file does not exist return empty string.
-    
+
     Parameters:
         file_path (str): The path to the file to be read.
 
@@ -39,9 +54,10 @@ def read_file(file_path: str) -> str:
     """
     try:
         data = open(file_path, "r", encoding="utf-8").read()
-    except:
+    except BaseException:
         data = ""
     return data
+
 
 def remove_date_time_parts(index_log: str) -> str:
     """

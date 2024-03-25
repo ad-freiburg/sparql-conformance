@@ -4,6 +4,7 @@ import requests
 import subprocess
 from backend.rdf_tools import write_ttl_file, delete_ttl_file, rdf_xml_to_turtle
 
+
 def index(command_index: str, graph_path: str) -> tuple:
     """
     Executes a command to index a graph file using the QLever IndexBuilderMain binary.
@@ -24,7 +25,11 @@ def index(command_index: str, graph_path: str) -> tuple:
     status = False
     try:
         cmd = f"{command_index}{graph_path}"
-        process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(
+            cmd,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
         output, error = process.communicate()
         if process.returncode != 0:
             return status, f"Indexing error: {error.decode('utf-8')} \n \n {output.decode('utf-8')}"
@@ -36,6 +41,7 @@ def index(command_index: str, graph_path: str) -> tuple:
         return status, index_log
     except Exception as e:
         return status, f"Exception executing index command: {str(e)}"
+
 
 def remove_index(command_remove_index: str) -> tuple:
     """
@@ -53,6 +59,7 @@ def remove_index(command_remove_index: str) -> tuple:
     except subprocess.CalledProcessError as e:
         return False, f"Error removing index files: {e}"
 
+
 def start_server(command_start_server: str, server_address, port) -> tuple:
     """
     Starts the SPARQL server and waits for it to be ready.
@@ -69,6 +76,7 @@ def start_server(command_start_server: str, server_address, port) -> tuple:
         return wait_for_server_startup(server_address, port)
     except Exception as e:
         return (500, f"Exception executing server command: {str(e)}")
+
 
 def wait_for_server_startup(server_address, port):
     """
@@ -97,6 +105,7 @@ def wait_for_server_startup(server_address, port):
 
     return (500, "Server failed to start within expected time")
 
+
 def stop_server(command_stop_server: str) -> str:
     """
     Stops the SPARQL server.
@@ -111,6 +120,7 @@ def stop_server(command_stop_server: str) -> str:
         subprocess.check_call(command_stop_server, shell=True)
     except subprocess.CalledProcessError as e:
         print(f"Error stopping server: {e}")
+
 
 def query(query, type, result_format, server_address, port) -> tuple:
     """
@@ -141,11 +151,11 @@ def query(query, type, result_format, server_address, port) -> tuple:
     else:
         content_type = "application/sparql-update; charset=utf-8"
 
-
     url = server_address + ":" + port
     headers = {"Accept": accept, "Content-type": content_type}
     try:
-        response = requests.post(url, headers=headers, data=query.encode("utf-8"))
+        response = requests.post(
+            url, headers=headers, data=query.encode("utf-8"))
         return (response.status_code, response.content.decode("utf-8"))
     except requests.exceptions.RequestException as e:
         return (500, f"Query execution error: {str(e)}")

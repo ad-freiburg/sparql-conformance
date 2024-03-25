@@ -91,8 +91,15 @@ class TestSuite:
         test = TestObject(row, self.config.path_to_test_suite, self.config)
         if test.graph == "":
             graph_path = "empty.ttl"
-            if not os.path.exists(os.path.join(self.config.path_to_test_suite, graph_path)):
-                    open(os.path.join(self.config.path_to_test_suite, graph_path), 'a').close()
+            if not os.path.exists(
+                os.path.join(
+                    self.config.path_to_test_suite,
+                    graph_path)):
+                open(
+                    os.path.join(
+                        self.config.path_to_test_suite,
+                        graph_path),
+                    'a').close()
         else:
             graph_path = os.path.join(test.group, test.graph)
         if graph_path in graphs_list_of_tests:
@@ -100,7 +107,12 @@ class TestSuite:
         else:
             graphs_list_of_tests[graph_path] = [test]
 
-    def evaluate_query(self, expected_string: str, query_result: str, test: TestObject, result_format: str):
+    def evaluate_query(
+            self,
+            expected_string: str,
+            query_result: str,
+            test: TestObject,
+            result_format: str):
         """
         Evaluates a query result based on the expected output and the format.
 
@@ -113,13 +125,17 @@ class TestSuite:
         status = FAILED
         error_type = RESULTS_NOT_THE_SAME
         if result_format == "srx":
-            status, error_type, expected_html, test_html, expected_red, test_red = compare_xml(expected_string, query_result, self.config.alias, self.config.number_types)
+            status, error_type, expected_html, test_html, expected_red, test_red = compare_xml(
+                expected_string, query_result, self.config.alias, self.config.number_types)
         elif result_format == "srj":
-            status, error_type, expected_html, test_html, expected_red, test_red = compare_json(expected_string, query_result, self.config.alias, self.config.number_types)
+            status, error_type, expected_html, test_html, expected_red, test_red = compare_json(
+                expected_string, query_result, self.config.alias, self.config.number_types)
         elif (result_format == "csv" or result_format == "tsv"):
-            status, error_type, expected_html, test_html, expected_red, test_red = compare_sv(expected_string, query_result, result_format, self.config.alias)
+            status, error_type, expected_html, test_html, expected_red, test_red = compare_sv(
+                expected_string, query_result, result_format, self.config.alias)
         elif result_format == "ttl":
-            status, error_type, expected_html, test_html, expected_red, test_red = compare_ttl(expected_string, query_result)
+            status, error_type, expected_html, test_html, expected_red, test_red = compare_ttl(
+                expected_string, query_result)
 
         self.update_test_status(test, status, error_type)
         setattr(test, "gotHtml", test_html)
@@ -139,7 +155,11 @@ class TestSuite:
         for test in list_of_tests:
             setattr(test, attribute, log)
 
-    def update_test_status(self, test: TestObject, status: str, error_type: str):
+    def update_test_status(
+            self,
+            test: TestObject,
+            status: str,
+            error_type: str):
         """
         Updates the status of a test in the test data.
 
@@ -151,7 +171,11 @@ class TestSuite:
         self.log_for_all_tests([test], "status", status)
         self.log_for_all_tests([test], "errorType", error_type)
 
-    def update_graph_status(self, list_of_tests: list, status: str, error_type: str):
+    def update_graph_status(
+            self,
+            list_of_tests: list,
+            status: str,
+            error_type: str):
         """
         Updates the status for all test of a graph.
 
@@ -163,7 +187,10 @@ class TestSuite:
         for test in list_of_tests:
             self.update_test_status(test, status, error_type)
 
-    def prepare_test_environment(self, graph_path: str, list_of_tests: list) -> bool:
+    def prepare_test_environment(
+            self,
+            graph_path: str,
+            list_of_tests: list) -> bool:
         """
         Prepares the test environment for a given graph.
 
@@ -180,7 +207,10 @@ class TestSuite:
             self.update_graph_status(list_of_tests, FAILED, INDEX_BUILD_ERROR)
             qlever.remove_index(self.config.command_remove_index)
         else:
-            server = qlever.start_server(self.config.command_start_server, self.config.server_address, self.config.port)
+            server = qlever.start_server(
+                self.config.command_start_server,
+                self.config.server_address,
+                self.config.port)
             if not server[0]:
                 self.update_graph_status(list_of_tests, FAILED, SERVER_ERROR)
             else:
@@ -191,20 +221,21 @@ class TestSuite:
 
     def process_failed_response(self, test, query_response: tuple) -> tuple:
         if "exception" in query_response[1]:
-            query_log = json.loads(query_response[1])["exception"].replace(";", ";\n")
+            query_log = json.loads(
+                query_response[1])["exception"].replace(
+                ";", ";\n")
             error_type = QUERY_EXCEPTION
         elif "HTTP Request" in query_response[1]:
             error_type = REQUEST_ERROR
             query_log = query_response[1]
-        elif "not supported" in query_response[1] and "content type" in query_response[1]:    
+        elif "not supported" in query_response[1] and "content type" in query_response[1]:
             error_type = NOT_SUPPORTED
             query_log = query_response[1]
-        else:    
+        else:
             error_type = UNDEFINED_ERROR
             query_log = query_response[1]
         setattr(test, "queryLog", query_log)
         self.update_test_status(test, FAILED, error_type)
-
 
     def run_query_tests(self, graphs_list_of_tests):
         """
@@ -214,22 +245,31 @@ class TestSuite:
             graph_path = os.path.join(self.config.path_to_test_suite, graph)
             print(f"Running query tests for graph: {graph_path}")
 
-            if not self.prepare_test_environment(graph_path, graphs_list_of_tests[graph]):
+            if not self.prepare_test_environment(
+                    graph_path, graphs_list_of_tests[graph]):
                 continue
 
             for test in graphs_list_of_tests[graph]:
                 result_format = test.result[test.result.rfind(".") + 1:]
-                query_result = qlever.query(test.queryFile, "rq", result_format, self.config.server_address, self.config.port)
+                query_result = qlever.query(
+                    test.queryFile,
+                    "rq",
+                    result_format,
+                    self.config.server_address,
+                    self.config.port)
                 if query_result[0] == 200:
-                    self.evaluate_query(test.resultFile, query_result[1], test, result_format)
+                    self.evaluate_query(
+                        test.resultFile, query_result[1], test, result_format)
                 else:
                     self.process_failed_response(test, query_result)
-
 
             qlever.stop_server(self.config.command_stop_server)
             if os.path.exists("./TestSuite.server-log.txt"):
                 server_log = util.read_file("./TestSuite.server-log.txt")
-                self.log_for_all_tests(graphs_list_of_tests[graph], "serverLog", util.remove_date_time_parts(server_log))
+                self.log_for_all_tests(
+                    graphs_list_of_tests[graph],
+                    "serverLog",
+                    util.remove_date_time_parts(server_log))
             qlever.remove_index(self.config.command_remove_index)
 
     def run_update_tests(self, graphs_list_of_tests):
@@ -240,14 +280,26 @@ class TestSuite:
             graph_path = os.path.join(self.config.path_to_test_suite, graph)
             print(f"Running update tests for graph: {graph_path}")
             for test in graphs_list_of_tests[graph]:
-                if not self.prepare_test_environment(graph_path, graphs_list_of_tests[graph]):
+                if not self.prepare_test_environment(
+                        graph_path, graphs_list_of_tests[graph]):
                     break
                 result_format = test.result[test.result.rfind(".") + 1:]
-                query_update_result = qlever.query(test.queryFile, "ru", result_format, self.config.server_address, self.config.port)
+                query_update_result = qlever.query(
+                    test.queryFile,
+                    "ru",
+                    result_format,
+                    self.config.server_address,
+                    self.config.port)
                 if query_update_result[0] == 200:
-                    query_result_graph = qlever.query("CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o}", "rq", result_format, self.config.server_address, self.config.port)
+                    query_result_graph = qlever.query(
+                        "CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o}",
+                        "rq",
+                        result_format,
+                        self.config.server_address,
+                        self.config.port)
                     if query_result_graph[0] == 200:
-                        self.evaluate_query(test.resultFile, query_result_graph[1], test, result_format)
+                        self.evaluate_query(
+                            test.resultFile, query_result_graph[1], test, result_format)
                     else:
                         self.process_failed_response(test, query_result_graph)
                 else:
@@ -256,7 +308,10 @@ class TestSuite:
                 qlever.stop_server(self.config.command_stop_server)
                 if os.path.exists("./TestSuite.server-log.txt"):
                     server_log = util.read_file("./TestSuite.server-log.txt")
-                    self.log_for_all_tests(graphs_list_of_tests[graph], "serverLog", util.remove_date_time_parts(server_log))
+                    self.log_for_all_tests(
+                        graphs_list_of_tests[graph],
+                        "serverLog",
+                        util.remove_date_time_parts(server_log))
                 qlever.remove_index(self.config.command_remove_index)
 
     def run_syntax_tests(self, graphs_list_of_tests):
@@ -267,11 +322,17 @@ class TestSuite:
             graph_path = os.path.join(self.config.path_to_test_suite, graph)
             print(f"Running syntax tests for graph: {graph_path}")
 
-            if not self.prepare_test_environment(graph_path, graphs_list_of_tests[graph]):
+            if not self.prepare_test_environment(
+                    graph_path, graphs_list_of_tests[graph]):
                 continue
 
             for test in graphs_list_of_tests[graph]:
-                query_result = qlever.query(test.queryFile, "rq", "srx", self.config.server_address, self.config.port)
+                query_result = qlever.query(
+                    test.queryFile,
+                    "rq",
+                    "srx",
+                    self.config.server_address,
+                    self.config.port)
                 if query_result[0] != 200:
                     self.process_failed_response(test, query_result)
                 else:
@@ -289,21 +350,38 @@ class TestSuite:
             qlever.stop_server(self.config.command_stop_server)
             if os.path.exists("./TestSuite.server-log.txt"):
                 server_log = util.read_file("./TestSuite.server-log.txt")
-                self.log_for_all_tests(graphs_list_of_tests[graph], "serverLog", util.remove_date_time_parts(server_log))
+                self.log_for_all_tests(
+                    graphs_list_of_tests[graph],
+                    "serverLog",
+                    util.remove_date_time_parts(server_log))
             qlever.remove_index(self.config.command_remove_index)
 
     def get_comment(self, test: TestObject) -> tuple:
         qlever.remove_index(self.config.command_remove_index)
-        index = qlever.index(self.config.command_index, os.path.join(self.config.path_to_test_suite, test.group, "manifest.ttl"))
+        index = qlever.index(
+            self.config.command_index,
+            os.path.join(
+                self.config.path_to_test_suite,
+                test.group,
+                "manifest.ttl"))
         if not index[0]:
             return FAILED, INDEX_BUILD_ERROR, ""
         else:
-            server = qlever.start_server(self.config.command_start_server, self.config.server_address, self.config.port)
+            server = qlever.start_server(
+                self.config.command_start_server,
+                self.config.server_address,
+                self.config.port)
             if not server[0]:
                 return FAILED, SERVER_ERROR, ""
         query = f'PREFIX rdfs:    <http://www.w3.org/2000/01/rdf-schema#> PREFIX mf:      <http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#>  SELECT ?comment WHERE {{ ?test mf:name """{test.name}""" . ?test rdfs:comment ?comment . }}'
-        query_result = qlever.query(query, "rq", "srj", self.config.server_address, self.config.port)
-        comment = json.loads(query_result[1])["results"]["bindings"][0]["comment"]["value"]
+        query_result = qlever.query(
+            query,
+            "rq",
+            "srj",
+            self.config.server_address,
+            self.config.port)
+        comment = json.loads(query_result[1])[
+            "results"]["bindings"][0]["comment"]["value"]
         qlever.stop_server(self.config.command_stop_server)
         qlever.remove_index(self.config.command_remove_index)
         return PASSED, "", comment
@@ -319,19 +397,28 @@ class TestSuite:
             for test in graphs_list_of_tests[graph]:
                 status, error_type, comment = self.get_comment(test)
                 if status == PASSED:
-                    if not self.prepare_test_environment(graph_path, graphs_list_of_tests[graph]):
+                    if not self.prepare_test_environment(
+                            graph_path, graphs_list_of_tests[graph]):
                         break
-                    status, error_type, extracted_expected_responses, extracted_sent_requests, got_responses = run_protocol_test(test, comment, self.config.server_address, self.config.port)
+                    status, error_type, extracted_expected_responses, extracted_sent_requests, got_responses = run_protocol_test(
+                        test, comment, self.config.server_address, self.config.port)
                     qlever.stop_server(self.config.command_stop_server)
                     qlever.remove_index(self.config.command_remove_index)
                     if os.path.exists("./TestSuite.server-log.txt"):
-                        server_log = util.read_file("./TestSuite.server-log.txt")
-                        self.log_for_all_tests(graphs_list_of_tests[graph], "serverLog", util.remove_date_time_parts(server_log))
-                
+                        server_log = util.read_file(
+                            "./TestSuite.server-log.txt")
+                        self.log_for_all_tests(
+                            graphs_list_of_tests[graph],
+                            "serverLog",
+                            util.remove_date_time_parts(server_log))
+
                 self.update_test_status(test, status, error_type)
                 setattr(test, "protocol", comment)
                 setattr(test, "protocolSent", extracted_sent_requests)
-                setattr(test, "responseExtracted", extracted_expected_responses)
+                setattr(
+                    test,
+                    "responseExtracted",
+                    extracted_expected_responses)
                 setattr(test, "response", got_responses)
 
     def run(self):
@@ -363,7 +450,8 @@ class TestSuite:
                             self.failed += 1
                         case vars.INTENDED:
                             self.passed_failed += 1
-                    # This will add a number behind the name if the name is not unique
+                    # This will add a number behind the name if the name is not
+                    # unique
                     if test.name in data:
                         i = 1
                         while True:
@@ -374,15 +462,20 @@ class TestSuite:
                             else:
                                 test.name = new_name
                                 data[new_name] = test.to_dict()
-                                break 
+                                break
                     else:
                         data[test.name] = test.to_dict()
-        data["info"] = {"name": "info",
-                                "passed": self.passed,
-                                "tests": self.test_count,
-                                "failed": self.failed,
-                                "passedFailed": self.passed_failed,
-                                "notTested": (self.test_count - self.passed - self.failed - self.passed_failed)}
+        data["info"] = {
+            "name": "info",
+            "passed": self.passed,
+            "tests": self.test_count,
+            "failed": self.failed,
+            "passedFailed": self.passed_failed,
+            "notTested": (
+                self.test_count -
+                self.passed -
+                self.failed -
+                self.passed_failed)}
         with open(file_path, "w") as file:
             json.dump(data, file, indent=4)
 
@@ -392,13 +485,15 @@ def main():
     if len(args) < 1:
         print(f"  Usage to create config: python3 {sys.argv[0]} config <server address> <port> <path to testsuite> <path to the qlever binaries>  <graph store implementation host> <path of the URL of the graph store> <URL returned in the Location HTTP header>\n  Usage to extract tests: python3 {sys.argv[0]} extract \n  Usage to run tests: python3 {sys.argv[0]} <name for the test suite run>")
         return
-    
+
     if args[0] == "config":
         if len(args) == 8:
             print(f"Create basic config.")
-            config_manager.create_config(args[1], args[2], args[3], args[4], args[5], args[6], args[7])
+            config_manager.create_config(
+                args[1], args[2], args[3], args[4], args[5], args[6], args[7])
         else:
-            print(f"Usage to create config: python3 {sys.argv[0]} config <server address> <port> <path to testsuite> <path to the qlever binaries> <graph store implementation host> <path of the URL of the graph store> <URL returned in the Location HTTP header>")
+            print(
+                f"Usage to create config: python3 {sys.argv[0]} config <server address> <port> <path to testsuite> <path to the qlever binaries> <graph store implementation host> <path of the URL of the graph store> <URL returned in the Location HTTP header>")
             return
 
     config = config_manager.initialize_config()
@@ -411,7 +506,7 @@ def main():
         else:
             print(f"Usage to extract tests: python3 {sys.argv[0]} extract")
             return
-    
+
     test_suite = TestSuite(args[0], config)
     if len(args) == 1 and args[0] != "config" and args[0] != "extract":
         if config is None:
@@ -425,6 +520,7 @@ def main():
         print(f"  Usage to create config: python3 {sys.argv[0]} config <server address> <port> <path to testsuite> <path to binaries> <graph store implementation host> <path of the URL of the graph store> <URL returned in the Location HTTP header> \n  Usage to extract tests: python3 {sys.argv[0]} extract \n  Usage to run tests: python3 {sys.argv[0]} <name for the test suite run>")
         return
     print("Done!")
+
 
 if __name__ == "__main__":
     main()

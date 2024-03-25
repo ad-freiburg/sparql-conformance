@@ -5,6 +5,7 @@ import backend.util as util
 import os
 import csv
 
+
 def extract_tests(config: Config):
     """
     Extracts tests from a set of directories and compiles results into a CSV file.
@@ -19,16 +20,31 @@ def extract_tests(config: Config):
     for path in config.directories:
         print("Extracting tests from: " + path)
         qlever.remove_index(config.command_remove_index)
-        index = qlever.index(config.command_index, os.path.join(config.path_to_test_suite, path, "manifest.ttl"))
+        index = qlever.index(
+            config.command_index,
+            os.path.join(
+                config.path_to_test_suite,
+                path,
+                "manifest.ttl"))
         if not index[0]:
             print(index[1])
             continue
-        server = qlever.start_server(config.command_start_server, config.server_address, config.port)
+        server = qlever.start_server(
+            config.command_start_server,
+            config.server_address,
+            config.port)
         if not server[0]:
             print(index[1])
             continue
         for query in config.queries:
-            query_result = qlever.query(util.read_file("./queries/" + query), "rq", "csv", config.server_address, config.port)
+            query_result = qlever.query(
+                util.read_file(
+                    "./queries/" +
+                    query),
+                "rq",
+                "csv",
+                config.server_address,
+                config.port)
             if query_result[0] == 200:
                 csv_content = query_result[1]
 
@@ -41,7 +57,12 @@ def extract_tests(config: Config):
                 print(query_result[1])
         qlever.stop_server(config.command_stop_server)
         qlever.remove_index(config.command_remove_index)
-    
+
     os.makedirs("./tests/", exist_ok=True)
     for query in csv_rows:
-        write_csv_file("./tests/"+query.replace(".rq", ".csv"), csv_rows[query])
+        write_csv_file(
+            "./tests/" +
+            query.replace(
+                ".rq",
+                ".csv"),
+            csv_rows[query])

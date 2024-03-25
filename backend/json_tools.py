@@ -1,14 +1,22 @@
 import json
-from backend.models import FAILED, PASSED, INTENDED, RESULTS_NOT_THE_SAME,INTENDED_MSG
+from backend.models import FAILED, PASSED, INTENDED, RESULTS_NOT_THE_SAME, INTENDED_MSG
+
 
 def read_json_file(file_path: str):
     return json.load(file_path)
+
 
 def write_json_file(file_path: str, json_data):
     with open(file_path, "w") as file:
         json.dump(json_data, file, indent=4)
 
-def handle_bindings(indent: int, level: int, bindings: list, remaining_bindings: list, mark_red: list) -> str:
+
+def handle_bindings(
+        indent: int,
+        level: int,
+        bindings: list,
+        remaining_bindings: list,
+        mark_red: list) -> str:
     """
     Formats the "bindings" list with HTML labels as needed for highlighting.
 
@@ -32,7 +40,7 @@ def handle_bindings(indent: int, level: int, bindings: list, remaining_bindings:
         if i > 0:
             parts.append(", ")
         parts.append("\n" + " " * (indent * (level + 1)))
-        
+
         # Apply label if the binding matches any in the reference bindings
         if binding in remaining_bindings:
             if binding in mark_red_copy:
@@ -43,11 +51,18 @@ def handle_bindings(indent: int, level: int, bindings: list, remaining_bindings:
         else:
             label = ""
             end_label = ""
-        parts.append(f"{label}{json_to_string(binding, {}, level + 1)}{end_label}")
+        parts.append(
+            f"{label}{json_to_string(binding, {}, level + 1)}{end_label}")
     parts.append("\n" + " " * (indent * level) + "]")
     return "".join(parts)
 
-def json_dict(indent: int, level: int, json_dict: dict, remaining_dict: dict, mark_red: list) -> str:
+
+def json_dict(
+        indent: int,
+        level: int,
+        json_dict: dict,
+        remaining_dict: dict,
+        mark_red: list) -> str:
     """
     Formats a dictionary with HTML labels as needed for highlighting.
 
@@ -72,10 +87,13 @@ def json_dict(indent: int, level: int, json_dict: dict, remaining_dict: dict, ma
         parts.append("\n" + " " * (indent * (level + 1)))
         if isinstance(value, list) and key == "vars":
             # Special handling for "vars" in "head"
-            parts.append(f"\"{key}\": {json_to_string(value, remaining_dict.get(key, []),mark_red, level + 1)}")
+            parts.append(
+                f"\"{key}\": {json_to_string(value, remaining_dict.get(key, []),mark_red, level + 1)}")
         elif isinstance(value, list) and key == "bindings":
             # Special handling for "bindings" in "results"
-            formatted_bindings = handle_bindings(indent, level, value, remaining_dict.get(key, []), mark_red)
+            formatted_bindings = handle_bindings(
+                indent, level, value, remaining_dict.get(
+                    key, []), mark_red)
             parts.append(f"\"{key}\": {formatted_bindings}")
         elif key == "boolean":
             # Special handling for "boolean" in "results"
@@ -86,12 +104,18 @@ def json_dict(indent: int, level: int, json_dict: dict, remaining_dict: dict, ma
                 end_label = '</label>'
             parts.append(f"\"{key}\": {label}{str(value).lower()}{end_label}")
         else:
-            parts.append(f"\"{key}\": {json_to_string(value, remaining_dict.get(key, {}), mark_red, level + 1)}")
-    
+            parts.append(
+                f"\"{key}\": {json_to_string(value, remaining_dict.get(key, {}), mark_red, level + 1)}")
+
     parts.append("\n" + " " * (indent * level) + "}")
     return "".join(parts)
 
-def json_list(indent: int, level: int, json_list: list, remaining_list: list) -> str:
+
+def json_list(
+        indent: int,
+        level: int,
+        json_list: list,
+        remaining_list: list) -> str:
     """
     Formats a list with HTML labels as needed for highlighting.
 
@@ -123,6 +147,7 @@ def json_list(indent: int, level: int, json_list: list, remaining_list: list) ->
     parts.append("\n" + " " * (indent * level) + "]")
     return "".join(parts)
 
+
 def json_to_string(json_obj, remaining_json, mark_red: list, level=0) -> str:
     """
     Converts a JSON object to a readable string and highlights elements found in the reference JSON with <"></">.
@@ -136,7 +161,7 @@ def json_to_string(json_obj, remaining_json, mark_red: list, level=0) -> str:
     Returns:
     str: A readable string representation of the JSON object with highlighted elements.
     """
-    indent=4
+    indent = 4
     if isinstance(json_obj, dict) and json_obj:
         return json_dict(indent, level, json_obj, remaining_json, mark_red)
     elif isinstance(json_obj, list):
@@ -146,7 +171,11 @@ def json_to_string(json_obj, remaining_json, mark_red: list, level=0) -> str:
     else:
         return str(json_obj)
 
-def generate_highlighted_string_json(json_obj: dict, remaining_json: dict, mark_red: list) -> str:
+
+def generate_highlighted_string_json(
+        json_obj: dict,
+        remaining_json: dict,
+        mark_red: list) -> str:
     """
     Generates an HTML-formatted and highlighted string representation of a JSON object.
 
@@ -160,12 +189,19 @@ def generate_highlighted_string_json(json_obj: dict, remaining_json: dict, mark_
     """
     return json_to_string(json_obj, remaining_json, mark_red)
 
-def json_elements_equal(element1: dict, element2: dict, compare_with_intended_behaviour: bool, alias: dict, number_types: list, map_bnodes: dict) -> bool:
+
+def json_elements_equal(
+        element1: dict,
+        element2: dict,
+        compare_with_intended_behaviour: bool,
+        alias: dict,
+        number_types: list,
+        map_bnodes: dict) -> bool:
     """
     Compares two JSON elements for equality.
 
     This method compares two JSON elements for equality. It checks for matching
-    keys and compares their values. It also accounts for datatype differences by comparing numerical values. 
+    keys and compares their values. It also accounts for datatype differences by comparing numerical values.
     The comparison can include intended behavior based on the compare_with_intended_behaviour Bool.
 
     Parameters:
@@ -188,17 +224,28 @@ def json_elements_equal(element1: dict, element2: dict, compare_with_intended_be
         if isinstance(field1, dict) and isinstance(field2, dict):
             for sub_key in set(field1.keys()) | set(field2.keys()):
                 if field1.get(sub_key) != field2.get(sub_key):
-                    if str(field1.get("type")) == "bnode" and str(field2.get("type")) == "bnode" and str(sub_key) == "value":
-                        if field1.get("value") not in map_bnodes and field2.get("value") not in map_bnodes:
-                            map_bnodes[field1.get("value")] = field2.get("value")
-                            map_bnodes[field2.get("value")] = field1.get("value")
+                    if str(
+                            field1.get("type")) == "bnode" and str(
+                            field2.get("type")) == "bnode" and str(sub_key) == "value":
+                        if field1.get("value") not in map_bnodes and field2.get(
+                                "value") not in map_bnodes:
+                            map_bnodes[field1.get(
+                                "value")] = field2.get("value")
+                            map_bnodes[field2.get(
+                                "value")] = field1.get("value")
                             continue
-                        if map_bnodes.get(field1.get("value")) == field2.get("value") and map_bnodes.get(field2.get("value")) == field1.get("value"):
+                        if map_bnodes.get(
+                                field1.get("value")) == field2.get("value") and map_bnodes.get(
+                                field2.get("value")) == field1.get("value"):
                             continue
-                    if str(field1.get("datatype")) in number_types and str(field2.get("datatype")) in number_types and str(sub_key) == "value":
-                        if float(field1.get(sub_key)) == float(field2.get(sub_key)):
+                    if str(field1.get("datatype")) in number_types and str(
+                            field2.get("datatype")) in number_types and str(sub_key) == "value":
+                        if float(
+                                field1.get(sub_key)) == float(
+                                field2.get(sub_key)):
                             continue
-                    if ((str(alias.get(str(field1.get(sub_key)))) == str(field2.get(sub_key))) or (str(alias.get(str(field2.get(sub_key)))) == str(field1.get(sub_key)))) and compare_with_intended_behaviour:
+                    if ((str(alias.get(str(field1.get(sub_key)))) == str(field2.get(sub_key))) or (str(alias.get(
+                            str(field2.get(sub_key)))) == str(field1.get(sub_key)))) and compare_with_intended_behaviour:
                         continue
                     return False
         else:
@@ -206,7 +253,14 @@ def json_elements_equal(element1: dict, element2: dict, compare_with_intended_be
                 return False
     return True
 
-def remove_once_found(list1: list, list2: list, compare_with_intended_behaviour: bool, alias: dict, number_types: list, map_bnodes: dict) -> list:
+
+def remove_once_found(
+        list1: list,
+        list2: list,
+        compare_with_intended_behaviour: bool,
+        alias: dict,
+        number_types: list,
+        map_bnodes: dict) -> list:
     """
     Compares two lists and returns the first list will all elements remove that are also in the second list.
 
@@ -222,17 +276,29 @@ def remove_once_found(list1: list, list2: list, compare_with_intended_behaviour:
         list: Retuns list1 with removed elements.
     """
     temp_list1 = list1[:]
-    
+
     for item2 in list2:
         for i, item1 in enumerate(temp_list1):
-            if json_elements_equal(item1, item2, compare_with_intended_behaviour, alias, number_types, map_bnodes):
-                # Remove the first found match and break the loop to move to the next b2
+            if json_elements_equal(
+                    item1,
+                    item2,
+                    compare_with_intended_behaviour,
+                    alias,
+                    number_types,
+                    map_bnodes):
+                # Remove the first found match and break the loop to move to
+                # the next b2
                 temp_list1.pop(i)
                 break
-    
+
     return temp_list1
 
-def compare_json(expected_json: str, query_json: str, alias: dict, number_types: list) -> tuple:
+
+def compare_json(
+        expected_json: str,
+        query_json: str,
+        alias: dict,
+        number_types: list) -> tuple:
     """
     Compares two JSON objects and identifies differences in their "head" and "results" sections.
 
@@ -246,7 +312,7 @@ def compare_json(expected_json: str, query_json: str, alias: dict, number_types:
         alias (dict): Dictionary with aliases for datatypes ex. int = integer .
         number_types (list): List containing all datatypes that should be used as numbers.
         map_bnodes (dict): Dictionary mapping the used bnodes.
-        
+
     Returns:
         tuple: A tuple containing the status and error type.
     """
@@ -262,56 +328,77 @@ def compare_json(expected_json: str, query_json: str, alias: dict, number_types:
     unique_vars2 = []
 
     # Compare and remove similar parts in "head" section
-    if expected.get("head") is not None and expected.get("head").get("vars") is not None:
+    if expected.get("head") is not None and expected.get(
+            "head").get("vars") is not None:
         vars1 = expected.get("head").get("vars")
         unique_vars1 = vars1
 
-    if query.get("head") is not None and query.get("head").get("vars") is not None:
+    if query.get("head") is not None and query.get(
+            "head").get("vars") is not None:
         vars2 = query.get("head").get("vars")
         unique_vars2 = vars2
 
-    if expected.get("head") is not None and expected.get("head").get("vars") is not None:
+    if expected.get("head") is not None and expected.get(
+            "head").get("vars") is not None:
         unique_vars1 = [v for v in vars1 if v not in vars2]
         expected["head"]["vars"] = unique_vars1
-    
-    if query.get("head") is not None and query.get("head").get("vars") is not None:
+
+    if query.get("head") is not None and query.get(
+            "head").get("vars") is not None:
         unique_vars2 = [v for v in vars2 if v not in vars1]
         query["head"]["vars"] = unique_vars2
-    
+
     # Check if its a boolean result or variable binding results
-    if query.get("results") is not None and expected.get("results") is not None:
-        # Compare and remove similar parts in "bindings" section using the custom comparison function
+    if query.get("results") is not None and expected.get(
+            "results") is not None:
+        # Compare and remove similar parts in "bindings" section using the
+        # custom comparison function
         bindings1 = expected["results"]["bindings"]
         bindings2 = query["results"]["bindings"]
 
-        unique_bindings1 = remove_once_found(bindings1, bindings2, False, alias, number_types, map_bnodes)
-        unique_bindings2 = remove_once_found(bindings2, bindings1, False, alias, number_types, map_bnodes)
+        unique_bindings1 = remove_once_found(
+            bindings1, bindings2, False, alias, number_types, map_bnodes)
+        unique_bindings2 = remove_once_found(
+            bindings2, bindings1, False, alias, number_types, map_bnodes)
 
         expected["results"]["bindings"] = unique_bindings1
         query["results"]["bindings"] = unique_bindings2
 
-        if len(expected["results"]["bindings"]) == 0 and len(query["results"]["bindings"]) == 0 and len(expected["head"]["vars"]) == 0 and len(query["head"]["vars"]) == 0:
+        if len(
+            expected["results"]["bindings"]) == 0 and len(
+            query["results"]["bindings"]) == 0 and len(
+            expected["head"]["vars"]) == 0 and len(
+                query["head"]["vars"]) == 0:
             status = PASSED
             error_type = ""
         else:
-            unique_bindings1 = remove_once_found(bindings1, bindings2, True, alias, number_types, map_bnodes)
-            unique_bindings2 = remove_once_found(bindings2, bindings1, True, alias, number_types, map_bnodes)
+            unique_bindings1 = remove_once_found(
+                bindings1, bindings2, True, alias, number_types, map_bnodes)
+            unique_bindings2 = remove_once_found(
+                bindings2, bindings1, True, alias, number_types, map_bnodes)
             if len(unique_bindings1) == 0 and len(unique_bindings2) == 0:
                 status = INTENDED
                 error_type = INTENDED_MSG
-        expected_string = generate_highlighted_string_json(json.loads(expected_json), expected, unique_bindings1)
-        query_string = generate_highlighted_string_json(json.loads(query_json), query, unique_bindings2)
-        expected_string_red = generate_highlighted_string_json(expected, expected, unique_bindings1)
-        query_string_red = generate_highlighted_string_json(query, query, unique_bindings2)
+        expected_string = generate_highlighted_string_json(
+            json.loads(expected_json), expected, unique_bindings1)
+        query_string = generate_highlighted_string_json(
+            json.loads(query_json), query, unique_bindings2)
+        expected_string_red = generate_highlighted_string_json(
+            expected, expected, unique_bindings1)
+        query_string_red = generate_highlighted_string_json(
+            query, query, unique_bindings2)
     else:
         bool1 = expected["boolean"]
         bool2 = query["boolean"]
         if str(bool1) == str(bool2):
             del expected["boolean"]
             del query["boolean"]
-        expected_string = generate_highlighted_string_json(json.loads(expected_json), expected, [])
-        query_string = generate_highlighted_string_json(json.loads(query_json), query, [])
-        expected_string_red = generate_highlighted_string_json(expected, expected, [])
+        expected_string = generate_highlighted_string_json(
+            json.loads(expected_json), expected, [])
+        query_string = generate_highlighted_string_json(
+            json.loads(query_json), query, [])
+        expected_string_red = generate_highlighted_string_json(
+            expected, expected, [])
         query_string_red = generate_highlighted_string_json(query, query, [])
-    
+
     return status, error_type, expected_string, query_string, expected_string_red, query_string_red

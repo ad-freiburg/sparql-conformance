@@ -1,5 +1,4 @@
-
-$(document).ready(async function () {
+$(document).ready(async function() {
     var data = await fetchData();
     var jsonData = data[0];
     var nameMap = data[1];
@@ -7,7 +6,7 @@ $(document).ready(async function () {
     $(`#table-select-runs1 tr[data-name=${selectedRun}]`).addClass("row-selected");
     var selectedRun2 = -1;
     if (Object.keys(jsonData).length == 2) {
-        selectedRun2 =  Object.keys(jsonData)[1]
+        selectedRun2 = Object.keys(jsonData)[1]
         handleAccordion("collapse-two", false);
     }
     var getTestRunResult = getTestRun(selectedRun, selectedRun2, jsonData);
@@ -20,7 +19,7 @@ $(document).ready(async function () {
     currentArray = filterTable($("#search-input").val(), jsonArray);
     buildTable(currentArray, currentTestName);
     showCorrectElement(currentTestName, selectedRun2);
-    
+
     $(document).on("click", ".button-toggle", function() {
         $(`#div-${this.id}`).toggleClass("visually-hidden");
     });
@@ -34,7 +33,7 @@ $(document).ready(async function () {
             arrowElement.classList.add("down");
         } else {
             arrowElement.classList.remove("down");
-            arrowElement.classList.add("up");   
+            arrowElement.classList.add("up");
         }
     });
 
@@ -52,8 +51,7 @@ $(document).ready(async function () {
         checkNodes.forEach(function(check) {
             if (buttonId.includes("uncheck")) {
                 check.checked = false;
-            }
-            else {
+            } else {
                 check.checked = true;
             }
         });
@@ -93,14 +91,14 @@ $(document).ready(async function () {
         });
     });
 
-    $("#search-input").on("keyup", function(){
+    $("#search-input").on("keyup", function() {
         var value = $(this).val();
         currentArray = filterTable(value, jsonArray);
         buildTable(currentArray, currentTestName);
         updateFilter(value, jsonArray, currentArray, document.getElementById("accordion-filter").querySelectorAll("input"));
     });
 
-    $("#search-input-run").on("keyup", function(){
+    $("#search-input-run").on("keyup", function() {
         var value = $(this).val();
         buildRunTables(jsonData, nameMap, value, selectedRun, selectedRun2);
     });
@@ -175,7 +173,7 @@ $(document).ready(async function () {
         handleAccordion("collapse-two", false);
         $(`#table-select-runs2 tr[data-name=${selectedRun2}]`).removeClass("row-selected");
         var runName = $(this).data("name");
-        if (runName == selectedRun2){
+        if (runName == selectedRun2) {
             selectedRun2 = -1;
         } else {
             selectedRun2 = runName;
@@ -187,7 +185,7 @@ $(document).ready(async function () {
         currentArray = jsonArray;
         currentTestName = -1;
         buildFilter(jsonArray);
-        currentArray = filterTable($("#search-input").val(),jsonArray);
+        currentArray = filterTable($("#search-input").val(), jsonArray);
         buildTable(currentArray, currentTestName);
         showCorrectElement(currentTestName, selectedRun2);
         updateRunSelectionText(selectedRun, selectedRun2, compareRunInformation);
@@ -195,23 +193,23 @@ $(document).ready(async function () {
 
 });
 
-function goBackToOverview(){
+function goBackToOverview() {
     var buttonOverview = document.getElementById("button-overview");
     var buttonExpand = document.getElementById("button-expand-all");
     buttonOverview.click();
     buttonExpand.click();
 }
 
-function updateRunSelectionText(selectedRun, selectedRun2, compareRunInformation){
+function updateRunSelectionText(selectedRun, selectedRun2, compareRunInformation) {
 
-    function generateInfoArrow(label1, label2, count){
+    function generateInfoArrow(label1, label2, count) {
         return `<p class="text-center fs-5 m-0 p-0" data-bs-toggle="tooltip" data-bs-title="David Nig"><label class="text-primary">${label1}</label> &larr; <label class="text-info">prev. ${label2}</label> : ${count}</p>`;
     }
 
-    function generateAdded(countDict){
+    function generateAdded(countDict) {
         result = "";
         for (let key in countDict) {
-            if (countDict[key] != 0){
+            if (countDict[key] != 0) {
                 if (key.startsWith("P")) {
                     label = '<label class="tests-passed">';
                 } else if (key.startsWith("F")) {
@@ -278,7 +276,7 @@ function updateRunSelectionText(selectedRun, selectedRun2, compareRunInformation
     };
 }
 
-function isArrayEqual(array1, array2){
+function isArrayEqual(array1, array2) {
     if (array1.length != array2.length) {
         return false;
     }
@@ -286,14 +284,14 @@ function isArrayEqual(array1, array2){
         return true;
     }
     array1.forEach(function(object) {
-        if (!array2.includes(object)){
+        if (!array2.includes(object)) {
             return false;
         }
     });
     return true;
 }
 
-function updateFilter(value, jsonArray, currentArray, nodes){
+function updateFilter(value, jsonArray, currentArray, nodes) {
     nodes.forEach(function(node) {
         // Invert checked and see if it changes the table
         node.checked = !node.checked;
@@ -309,12 +307,11 @@ function updateFilter(value, jsonArray, currentArray, nodes){
 function handleAccordion(itemId, collapse) {
     var item = document.getElementById(itemId);
     var bsCollapse = new bootstrap.Collapse(item, {
-      toggle: false
+        toggle: false
     });
     if (collapse) {
         bsCollapse.hide();
-    }
-    else {
+    } else {
         bsCollapse.show();
     }
 }
@@ -364,13 +361,13 @@ function getTestRun(run1, run2, jsonData) {
 }
 
 function convertObjectToArray(jsonData) {
-    var jsonArray = Object.keys(jsonData).map(function (key) {
+    var jsonArray = Object.keys(jsonData).map(function(key) {
         return jsonData[key];
     });
     return jsonArray;
 }
 
-function buildRunTables(jsonData, nameMap, filter, selectedRun, selectedRun2){
+function buildRunTables(jsonData, nameMap, filter, selectedRun, selectedRun2) {
     var tableBodies = document.getElementsByClassName("table-body-runs");
     tableBodies[0].innerHTML = "";
     tableBodies[1].innerHTML = "";
@@ -378,7 +375,7 @@ function buildRunTables(jsonData, nameMap, filter, selectedRun, selectedRun2){
     for (var i in keys) {
         var info = jsonData[keys[i]].info;
 
-        if (!keys[i].toLowerCase().includes(filter.toLowerCase())){
+        if (!keys[i].toLowerCase().includes(filter.toLowerCase())) {
             continue;
         }
 
@@ -415,7 +412,7 @@ function buildRunTables(jsonData, nameMap, filter, selectedRun, selectedRun2){
     $(`#table-select-runs2 tr[data-name=${selectedRun2}]`).addClass("row-selected");
 }
 
-function buildTable(jsonArray, currentTestName){
+function buildTable(jsonArray, currentTestName) {
     var tableCountContainer = document.getElementById("container-table-test-count");
     tableCountContainer.innerHTML = `Tests found: ${jsonArray.length}`
     var tableBody = document.getElementById("table-body-tests");
@@ -453,7 +450,7 @@ function buildTable(jsonArray, currentTestName){
     }
 }
 
-function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2){
+function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2) {
     var testDetails = jsonArray.find((test) => test.name === testName);
     if (selectedRun2 != -1) {
         var run1Heading = document.getElementById("heading-result1");
@@ -478,9 +475,12 @@ function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2){
         node.checked = true;
     });
 
-    var overviewEntries = [
-        { label: "Comment", value: testDetails.comment, key: "comment", line: "True" }
-    ];
+    var overviewEntries = [{
+        label: "Comment",
+        value: testDetails.comment,
+        key: "comment",
+        line: "True"
+    }];
 
     if (testDetails.typeName == "QueryEvaluationTest" || testDetails.typeName == "CSVResultFormatTest" || testDetails.typeName == "UpdateEvaluationTest") {
         if (testDetails.status != "Failed" || testDetails.errorType == "RESULTS NOT THE SAME" || testDetails.errorType == "QUERY RESULT FORMAT ERROR") {
@@ -494,50 +494,204 @@ function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2){
             queryKey = "queryLog";
             expectedKey = "resultFile";
         }
-        overviewEntries.push({ label: "Index File", value: testDetails.graphFile, key: "graphFile", line: "False" });
-        overviewEntries.push({ label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False"  });
-        overviewEntries.push({ label: "Expected Result", value: expectedResult, key: expectedKey, line: "False" });
-        overviewEntries.push({ label: "Query Result", value: queryResult, key: queryKey, line: "False" });
+        overviewEntries.push({
+            label: "Index File",
+            value: testDetails.graphFile,
+            key: "graphFile",
+            line: "False"
+        });
+        overviewEntries.push({
+            label: "Query File",
+            value: testDetails.queryFile,
+            key: "queryFile",
+            line: "False"
+        });
+        overviewEntries.push({
+            label: "Expected Result",
+            value: expectedResult,
+            key: expectedKey,
+            line: "False"
+        });
+        overviewEntries.push({
+            label: "Query Result",
+            value: queryResult,
+            key: queryKey,
+            line: "False"
+        });
     } else if (testDetails.typeName == "PositiveSyntaxTest11" || testDetails.typeName == "NegativeSyntaxTest11" || testDetails.typeName == "PositiveUpdateSyntaxTest11" || testDetails.typeName == "NegativeUpdateSyntaxTest11") {
-        overviewEntries.push({ label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False"  });
-        overviewEntries.push({ label: "Query Result", value: testDetails.queryLog, key: "gotHtml", line: "False" });
+        overviewEntries.push({
+            label: "Query File",
+            value: testDetails.queryFile,
+            key: "queryFile",
+            line: "False"
+        });
+        overviewEntries.push({
+            label: "Query Result",
+            value: testDetails.queryLog,
+            key: "gotHtml",
+            line: "False"
+        });
     } else if (testDetails.typeName == "ProtocolTest" || testDetails.typeName == "GraphStoreProtocolTest") {
-        overviewEntries.splice(0,0);
-        overviewEntries.push({ label: "Protocol", value: testDetails.protocol, key: "protocol", line: "False"  });
-        overviewEntries.push({ label: "Response", value: testDetails.response, key: "response", line: "False" });
-        overviewEntries.push({ label: "Protocol sent", value: testDetails.protocolSent, key: "protocolSent", line: "False"  });
-        overviewEntries.push({ label: "Response Extracted", value: testDetails.responseExtracted, key: "responseExtracted", line: "False" });
+        overviewEntries.splice(0, 0);
+        overviewEntries.push({
+            label: "Protocol",
+            value: testDetails.protocol,
+            key: "protocol",
+            line: "False"
+        });
+        overviewEntries.push({
+            label: "Response",
+            value: testDetails.response,
+            key: "response",
+            line: "False"
+        });
+        overviewEntries.push({
+            label: "Protocol sent",
+            value: testDetails.protocolSent,
+            key: "protocolSent",
+            line: "False"
+        });
+        overviewEntries.push({
+            label: "Response Extracted",
+            value: testDetails.responseExtracted,
+            key: "responseExtracted",
+            line: "False"
+        });
     }
 
     if (testDetails.errorType == "INDEX BUILD ERROR") {
-        overviewEntries.push({ label: "Index Build Log", value: testDetails.indexLog, key: "indexLog", line: "False"  });
+        overviewEntries.push({
+            label: "Index Build Log",
+            value: testDetails.indexLog,
+            key: "indexLog",
+            line: "False"
+        });
     }
     if (testDetails.errorType == "SERVER ERROR") {
-        overviewEntries.push({ label: "Server Status", value: testDetails.serverStatus, key: "serverStatus", line: "True" });
-        overviewEntries.push({ label: "Server Log", value: testDetails.serverLog, key: "serverLog", line: "False" });
+        overviewEntries.push({
+            label: "Server Status",
+            value: testDetails.serverStatus,
+            key: "serverStatus",
+            line: "True"
+        });
+        overviewEntries.push({
+            label: "Server Log",
+            value: testDetails.serverLog,
+            key: "serverLog",
+            line: "False"
+        });
     }
-    var allEntries = [
-        { label: "Index File", value: testDetails.graphFile, key: "graphFile", line: "False"  },
-        { label: "Index Build Log", value: testDetails.indexLog, key: "indexLog", line: "False"  },
-        { label: "Query File", value: testDetails.queryFile, key: "queryFile", line: "False"  },
-        { label: "Query Sent", value: testDetails.querySent, key: "querySent", line: "False"  },
-        { label: "Query Log", value: testDetails.queryLog, key: "queryLog", line: "False"  },
-        { label: "Server Status", value: testDetails.serverStatus, key: "serverStatus", line: "True" },
-        { label: "Server Log", value: testDetails.serverLog, key: "serverLog", line: "False" },
-        { label: "Expected Query Result",value: [testDetails.expectedHtml, testDetails.expectedHtmlRed], key: "expectedHtml", line: "False" },
-        { label: "Query Result", value: [testDetails.gotHtml, testDetails.gotHtmlRed], key: "gotHtml", line: "False" },
-        { label: "Query Filename", value: testDetails.query, key: "query", line: "True"  },
-        { label: "Index Filename", value: testDetails.graph, key: "graph", line: "True" },
-        { label: "Result Filename", value: testDetails.result, key: "result", line: "True"  },
-        { label: "Result File", value: testDetails.resultFile, key: "resultFile", line: "False" },
-        { label: "Test Type", value: testDetails.type, key: "type", line: "True" },
-        { label: "Test Feature", value: testDetails.feature, key: "feature", line: "True" },
-        { label: "Approval", value: testDetails.approval, key: "approval", line: "True" },
-        { label: "Approved by", value: testDetails.approvedBy, key: "approvedBy", line: "True" },
-        { label: "Config", value: testDetails.config, key: "configs", line: "False" }
+    var allEntries = [{
+            label: "Index File",
+            value: testDetails.graphFile,
+            key: "graphFile",
+            line: "False"
+        },
+        {
+            label: "Index Build Log",
+            value: testDetails.indexLog,
+            key: "indexLog",
+            line: "False"
+        },
+        {
+            label: "Query File",
+            value: testDetails.queryFile,
+            key: "queryFile",
+            line: "False"
+        },
+        {
+            label: "Query Sent",
+            value: testDetails.querySent,
+            key: "querySent",
+            line: "False"
+        },
+        {
+            label: "Query Log",
+            value: testDetails.queryLog,
+            key: "queryLog",
+            line: "False"
+        },
+        {
+            label: "Server Status",
+            value: testDetails.serverStatus,
+            key: "serverStatus",
+            line: "True"
+        },
+        {
+            label: "Server Log",
+            value: testDetails.serverLog,
+            key: "serverLog",
+            line: "False"
+        },
+        {
+            label: "Expected Query Result",
+            value: [testDetails.expectedHtml, testDetails.expectedHtmlRed],
+            key: "expectedHtml",
+            line: "False"
+        },
+        {
+            label: "Query Result",
+            value: [testDetails.gotHtml, testDetails.gotHtmlRed],
+            key: "gotHtml",
+            line: "False"
+        },
+        {
+            label: "Query Filename",
+            value: testDetails.query,
+            key: "query",
+            line: "True"
+        },
+        {
+            label: "Index Filename",
+            value: testDetails.graph,
+            key: "graph",
+            line: "True"
+        },
+        {
+            label: "Result Filename",
+            value: testDetails.result,
+            key: "result",
+            line: "True"
+        },
+        {
+            label: "Result File",
+            value: testDetails.resultFile,
+            key: "resultFile",
+            line: "False"
+        },
+        {
+            label: "Test Type",
+            value: testDetails.type,
+            key: "type",
+            line: "True"
+        },
+        {
+            label: "Test Feature",
+            value: testDetails.feature,
+            key: "feature",
+            line: "True"
+        },
+        {
+            label: "Approval",
+            value: testDetails.approval,
+            key: "approval",
+            line: "True"
+        },
+        {
+            label: "Approved by",
+            value: testDetails.approvedBy,
+            key: "approvedBy",
+            line: "True"
+        },
+        {
+            label: "Config",
+            value: testDetails.config,
+            key: "configs",
+            line: "False"
+        }
     ];
 
-    if (selectedRun2 == -1){
+    if (selectedRun2 == -1) {
         buildHTML(overviewEntries, "container-test-overview");
         buildHTML(allEntries, "container-test-details");
     } else {
@@ -545,7 +699,7 @@ function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2){
         buildHTML(allEntries, "container-test-details-1");
 
         overviewEntries = replaceEntries(overviewEntries, testDetails);
-        allEntries = replaceEntries(allEntries, testDetails)         
+        allEntries = replaceEntries(allEntries, testDetails)
         buildHTML(overviewEntries, "container-test-overview-2");
         buildHTML(allEntries, "container-test-details-2");
     }
@@ -555,7 +709,7 @@ function escapeHtml(html) {
     return html.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 }
 
-function replaceEntries(entries, testDetails){
+function replaceEntries(entries, testDetails) {
     entries.forEach(function(entry) {
         if (Array.isArray(entry.key)) {
             entry.value = [];
@@ -569,25 +723,24 @@ function replaceEntries(entries, testDetails){
     return entries;
 }
 
-function buildHTML(entries, id){
+function buildHTML(entries, id) {
     var element = document.getElementById(id);
     element.innerHTML = ""
     entries.forEach(entry => {
         if (Array.isArray(entry.value)) {
             element.innerHTML += createInfoElement(entry.label, entry.value[0], entry.value[1])
-        }
-        else {
+        } else {
             element.innerHTML += createInfoElement(entry.label, entry.value, null)
         }
     });
 }
 
-function copyObject(object){
+function copyObject(object) {
     return JSON.parse(JSON.stringify(object));
 }
 
-function matchStatus(status, s, results){
-    switch(status) {
+function matchStatus(status, s, results) {
+    switch (status) {
         case "Passed":
             results[`${s}ToP`] = results[`${s}ToP`] + 1
             break;
@@ -599,7 +752,7 @@ function matchStatus(status, s, results){
             break;
         case "NOT TESTED":
             results[`${s}ToN`] = results[`${s}ToN`] + 1
-                break;
+            break;
     }
 }
 
@@ -620,7 +773,12 @@ function compare(dict1, dict2) {
         "nToP": 0,
         "nToF": 0,
         "nToI": 0,
-        "added": {"N": 0, "P": 0, "I": 0, "F": 0},
+        "added": {
+            "N": 0,
+            "P": 0,
+            "I": 0,
+            "F": 0
+        },
         "deleted": 0,
         "unchanged": 0
     };
@@ -628,14 +786,14 @@ function compare(dict1, dict2) {
     for (const key of allKeys) {
         if (key === "info") continue
         if (key in dict1 && key in dict2) {
-            if (dict1[key]["status"] != dict2[key]["status"] || dict1[key]["errorType"] != dict2[key]["errorType"]){
+            if (dict1[key]["status"] != dict2[key]["status"] || dict1[key]["errorType"] != dict2[key]["errorType"]) {
                 result[key] = copyObject(dict1[key]);
-                for (let subKey in result[key]){
+                for (let subKey in result[key]) {
                     result[key][subKey + "-run2"] = dict2[key][subKey]
                 }
             }
             if (dict1[key]["status"] != dict2[key]["status"]) {
-                switch(dict2[key]["status"]) {
+                switch (dict2[key]["status"]) {
                     case "Passed":
                         matchStatus(dict1[key]["status"], "p", information)
                         break;
@@ -647,34 +805,34 @@ function compare(dict1, dict2) {
                         break;
                     case "NOT TESTED":
                         matchStatus(dict1[key]["status"], "n", information)
-                            break;
+                        break;
                 }
             } else {
                 information["unchanged"] = information["unchanged"] + 1
             }
         } else if (key in dict1) {
-            switch(dict1[key]["status"]) {
+            switch (dict1[key]["status"]) {
                 case "Passed":
                     information["added"]["P"] = information["added"]["P"] + 1
                     break;
                 case "Failed: Intended":
-                    information["added"]["I"]  = information["added"]["I"]  + 1
+                    information["added"]["I"] = information["added"]["I"] + 1
                     break;
                 case "Failed":
-                    information["added"]["F"]  = information["added"]["F"]  + 1
+                    information["added"]["F"] = information["added"]["F"] + 1
                     break;
                 case "NOT TESTED":
-                    information["added"]["N"]  = information["added"]["N"] + 1
+                    information["added"]["N"] = information["added"]["N"] + 1
                     break;
             }
             result[key] = copyObject(dict1[key]);
-            for (let subKey in result[key]){
+            for (let subKey in result[key]) {
                 result[key][subKey + "-run2"] = "Test not part of run!"
             }
         } else {
             information["deleted"] = information["deleted"] + 1
             result[key] = copyObject(dict2[key])
-            for (let subKey in result[key]){
+            for (let subKey in result[key]) {
                 result[key][subKey + "-run2"] = result[key][subKey]
                 result[key][subKey] = "Test not part of run!"
             }
@@ -686,7 +844,7 @@ function compare(dict1, dict2) {
     return [result, information];
 }
 
-function showCorrectElement(currentTestName, selectedRun2){
+function showCorrectElement(currentTestName, selectedRun2) {
     $("#nothing").addClass("visually-hidden");
     $("#buttons").addClass("visually-hidden");
     $("#toggles").addClass("visually-hidden");
@@ -707,9 +865,9 @@ function showCorrectElement(currentTestName, selectedRun2){
     }
 }
 
-function createInfoElement(heading, text, text2){
+function createInfoElement(heading, text, text2) {
     var className = ""
-    if (text2 != null){
+    if (text2 != null) {
         className = "normalText"
     }
     var id = Math.random().toString(36).slice(2, 11);
@@ -719,7 +877,7 @@ function createInfoElement(heading, text, text2){
     html += `<strong>${heading} </strong><i class="arrow up"></i></a>`;
     html += `<div class="collapse show" id="c-${id}"><div class="card card-body">`;
     html += `<pre class="${className}">${text}</pre>`
-    if (text2 != null){
+    if (text2 != null) {
         html += `<pre class="redText visually-hidden">${text2}</pre>`
     }
     html += `</div></div></div></div>`
@@ -733,7 +891,7 @@ function addIfNotPresent(array, item) {
     return array;
 }
 
-function buildFilter(jsonArray){
+function buildFilter(jsonArray) {
     var status = document.getElementById("container-filter-status");
     var error = document.getElementById("container-filter-error");
     var type = document.getElementById("container-filter-type");
@@ -758,17 +916,17 @@ function buildFilter(jsonArray){
     group.innerHTML = createChekboxes(testGroupItems);
 }
 
-function createChekboxes(items){
+function createChekboxes(items) {
     var html = "";
     for (let itemId in items) {
         html += `<div class="form-check form-check-inline">`;
         html += `<input class="form-check-input" type="checkbox" id="filter-${items[itemId].replace(/\s+/g, '')}" value="${items[itemId]}" checked>`;
         html += `<label class="form-check-label" for="filter-${items[itemId].replace(/\s+/g, '')}">${items[itemId]}</label></div>`;
-    } 
+    }
     return html
 }
 
-function getCheckedValues(containerId){
+function getCheckedValues(containerId) {
     var inputNodes = document.querySelectorAll(`#${containerId} input`);
     var values = [];
     inputNodes.forEach(function(node) {
@@ -779,23 +937,23 @@ function getCheckedValues(containerId){
     return values;
 }
 
-function filterTable(value, jsonArray){
+function filterTable(value, jsonArray) {
     var filteredArray = [];
     var statusFilter = getCheckedValues("container-filter-status");
     var errorFilter = getCheckedValues("container-filter-error");
     var typeFilter = getCheckedValues("container-filter-type");
     var groupFilter = getCheckedValues("container-filter-group");
     jsonArray.forEach(function(test) {
-        if (!statusFilter.includes(test.status)){
+        if (!statusFilter.includes(test.status)) {
             return;
         }
-        if (!errorFilter.includes(test.errorType)){
+        if (!errorFilter.includes(test.errorType)) {
             return;
         }
-        if (!typeFilter.includes(test.typeName)){
+        if (!typeFilter.includes(test.typeName)) {
             return;
         }
-        if (!groupFilter.includes(test.group)){
+        if (!groupFilter.includes(test.group)) {
             return;
         }
         filteredArray.push(test);
@@ -812,10 +970,10 @@ function searchTable(value, currentArray) {
         // Check that every keyword matches at least one property of 'test'
         var matchesAllKeywords = keywords.every(function(keyword) {
             return test.name.toLowerCase().includes(keyword) ||
-                   test.status.toLowerCase().includes(keyword) ||
-                   test.errorType.toLowerCase().includes(keyword) ||
-                   test.typeName.toLowerCase().includes(keyword) ||
-                   test.group.toLowerCase() == keyword;
+                test.status.toLowerCase().includes(keyword) ||
+                test.errorType.toLowerCase().includes(keyword) ||
+                test.typeName.toLowerCase().includes(keyword) ||
+                test.group.toLowerCase() == keyword;
         });
         if (matchesAllKeywords) {
             searchedArray.push(test);

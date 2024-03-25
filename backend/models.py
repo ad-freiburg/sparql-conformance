@@ -6,9 +6,9 @@ FAILED = "Failed"
 PASSED = "Passed"
 INTENDED = "Failed: Intended"
 QUERY_EXCEPTION = "QUERY EXCEPTION"
-REQUEST_ERROR= "REQUEST ERROR"
+REQUEST_ERROR = "REQUEST ERROR"
 UNDEFINED_ERROR = "UNDEFINED ERROR"
-INDEX_BUILD_ERROR= "INDEX BUILD ERROR"
+INDEX_BUILD_ERROR = "INDEX BUILD ERROR"
 SERVER_ERROR = "SERVER ERROR"
 NOT_TESTED = "NOT TESTED"
 RESULTS_NOT_THE_SAME = "RESULTS NOT THE SAME"
@@ -17,8 +17,10 @@ EXPECTED_EXCEPTION = "EXPECTED: QUERY EXCEPTION ERROR"
 FORMAT_ERROR = "QUERY RESULT FORMAT ERROR"
 NOT_SUPPORTED = "CONTENT TYPE NOT SUPPORTED"
 
-#?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?approvedBy ?regime ?graphStore ?graphLabel ?graphData ?actionGraphStore ?actionGraphLabel ?actionGraphData group
-class TestObject: 
+# ?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?approvedBy ?regime ?graphStore ?graphLabel ?graphData ?actionGraphStore ?actionGraphLabel ?actionGraphData group
+
+
+class TestObject:
     def __init__(self, row, path_to_test_suite, config):
         self.test = row[5]
         self.type = row[0]
@@ -39,9 +41,21 @@ class TestObject:
         self.actionGraphStore = row[14]
         self.actionGraphLabel = row[15]
         self.actionGraphData = row[16]"""
-        self.queryFile = util.read_file(os.path.join(path_to_test_suite, self.group , self.query))
-        self.graphFile = util.read_file(os.path.join(path_to_test_suite, self.group , self.graph))
-        self.resultFile = util.read_file(os.path.join(path_to_test_suite, self.group , self.result))
+        self.queryFile = util.read_file(
+            os.path.join(
+                path_to_test_suite,
+                self.group,
+                self.query))
+        self.graphFile = util.read_file(
+            os.path.join(
+                path_to_test_suite,
+                self.group,
+                self.graph))
+        self.resultFile = util.read_file(
+            os.path.join(
+                path_to_test_suite,
+                self.group,
+                self.result))
         self.status = NOT_TESTED
         self.errorType = ""
         self.expectedHtml = ""
@@ -96,7 +110,7 @@ class TestObject:
             "protocolSent": util.escape(self.protocolSent),
             "responseExtracted": util.escape(self.responseExtracted),
             "response": util.escape(self.response),
-            "config": util.escape(json.dumps(self.config.to_dict(), indent = 4))
+            "config": util.escape(json.dumps(self.config.to_dict(), indent=4))
         }
         """ "graphStore": util.escape(self.graphStore),
         "graphLabel": util.escape(self.graphLabel),
@@ -105,7 +119,8 @@ class TestObject:
         "actionGraphLabel": util.escape(self.actionGraphLabel),
         "actionGraphData": util.escape(self.actionGraphData) """
         return test_dict
-       
+
+
 class Config:
     def __init__(self, config):
         self.HOST = config.get("HOST")
@@ -130,8 +145,8 @@ class Config:
             "number_types": self.number_types,
             "queries": self.queries,
             "directories": self.directories,
-            "HOST" : self.HOST,
-            "GRAPHSTORE" : self.GRAPHSTORE,
-            "NEWPATH" : self.NEWPATH
+            "HOST": self.HOST,
+            "GRAPHSTORE": self.GRAPHSTORE,
+            "NEWPATH": self.NEWPATH
         }
         return config_dict

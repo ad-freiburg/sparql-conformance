@@ -1,6 +1,7 @@
 import json
 import sys
-import os 
+import os
+
 
 def match_status(status, new_run_test, s, results):
     match status:
@@ -12,6 +13,7 @@ def match_status(status, new_run_test, s, results):
             results[f"{s}-n"].append(new_run_test)
         case "Failed: Intended":
             results[f"{s}-i"].append(new_run_test)
+
 
 def compare_dicts(old_run, new_run):
     all_test = set(old_run.keys()) | set(new_run.keys())
@@ -70,15 +72,32 @@ def compare_dicts(old_run, new_run):
         else:
             match old_run_test["status"]:
                 case "Passed":
-                    match_status(new_run_test["status"], new_run_test, "p", results)
+                    match_status(
+                        new_run_test["status"],
+                        new_run_test,
+                        "p",
+                        results)
                 case "Failed":
-                    match_status(new_run_test["status"], new_run_test, "f", results)
+                    match_status(
+                        new_run_test["status"],
+                        new_run_test,
+                        "f",
+                        results)
                 case "NOT TESTED":
-                    match_status(new_run_test["status"], new_run_test, "n", results)
+                    match_status(
+                        new_run_test["status"],
+                        new_run_test,
+                        "n",
+                        results)
                 case "Failed: Intended":
-                    match_status(new_run_test["status"], new_run_test, "i", results)
+                    match_status(
+                        new_run_test["status"],
+                        new_run_test,
+                        "i",
+                        results)
 
     return results
+
 
 def main():
     msg = ""
@@ -102,7 +121,7 @@ def main():
                 print(len(results[key]))
                 if key.startswith("p") and key != "p":
                     status = 1
-    
+
         if status != 0:
             msg = "New run contains test that previously 'Passed' and now don't."
             print(msg)
@@ -110,9 +129,15 @@ def main():
             workflow["master"] = args[0]
             with open("../test-web/workflow.json", "w") as file:
                 json.dump(workflow, file, indent=4)
-        link = "Link to compare runs: https://sirdnarch.github.io/test-web/index-" + args[0] + "-" + old_run + ".html"
+        link = "Link to compare runs: https://sirdnarch.github.io/test-web/index-" + \
+            args[0] + "-" + old_run + ".html"
         print(link)
-        os.system("cp ../test-web/index.html ../test-web/index-" + args[0] + "-" + old_run + ".html")
+        os.system(
+            "cp ../test-web/index.html ../test-web/index-" +
+            args[0] +
+            "-" +
+            old_run +
+            ".html")
     else:
         workflow["master"] = args[0]
         with open("../test-web/workflow.json", "w") as file:
@@ -122,6 +147,7 @@ def main():
     os.system(f'echo "status={status}" >> $GITHUB_ENV')
     os.system(f'echo "msg={msg}" >> $GITHUB_ENV')
     os.system(f'echo "link={link}" >> $GITHUB_ENV')
+
 
 if __name__ == "__main__":
     main()
