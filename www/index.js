@@ -713,10 +713,10 @@ function createInfoElement(heading, text, text2){
         className = "normalText"
     }
     var id = Math.random().toString(36).slice(2, 11);
-    var html = `<div class="row container-info justify-content-center">`;
-    html += `<div class="col-auto align-self-center">`
+    var html = `<div class="row container-info ">`;
+    html += `<div class="col-auto">`
     html += `<a id="a-${id}" class="link-collapse" data-bs-toggle="collapse" href="#c-${id}" role="button" aria-expanded="true" aria-controls="c-${id}">`;
-    html += `<p class="text-center"><strong>${heading} </strong><i class="arrow up"></i></p></a>`;
+    html += `<strong>${heading} </strong><i class="arrow up"></i></a>`;
     html += `<div class="collapse show" id="c-${id}"><div class="card card-body">`;
     html += `<pre class="${className}">${text}</pre>`
     if (text2 != null){

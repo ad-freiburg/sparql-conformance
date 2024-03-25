@@ -42,8 +42,8 @@
           <p>Results that are not marked do have a match.</p>
         </div>
       </div>
-      <div class="container-fluid p-0" id="container-main">
-        <div class="container-fluid p-4">
+      <div class="container-fluid custom-min-width p-0" id="container-main">
+        <div class="container-fluid">
           <div class="accordion" id="accordion-runs">
             <div class="accordion-item">
               <h2 class="accordion-header">
@@ -94,9 +94,9 @@
                 Select test
                 </button>
               </h2>
-              <div id="collapse-two" class="accordion-collapse collapse">
-                <div id="container-collapse-two" class="accordion-body">
-                  <div class="container-filter row m-0 py-4">
+              <div id="collapse-two" class="accordion-collapse collapse row justify-content-center">
+                <div id="container-collapse-two" class="accordion-body select-test-max-width col">
+                  <div class="container-filter row m-0 py-4 ">
                     <div class="accordion" id="accordion-filter">
                       <div class="accordion-item">
                         <h3 class="accordion-header">
@@ -107,10 +107,10 @@
                         <div id="collapse-filter" class="accordion-collapse collapse">
                           <div id="container-filter" class="row justify-content-center accordion-body">
                             <div class="row filter-row g-0">
-                              <div class="col-2">
+                              <div class="col-2 mx-2">
                                 <div class="row">
                                   <div class="col">
-                                    Status
+                                    <p class="fs-4">Status</p>
                                   </div>
                                   <div class="col-auto">
                                     <div class="row g-1">
@@ -124,14 +124,14 @@
                                   </div>
                                 </div>
                               </div>
-                              <div class="col" id="container-filter-status"></div>
+                              <div class="col mx-2" id="container-filter-status"></div>
                             </div>
                             <div class="divider"></div>
                             <div class="row filter-row g-0">
                               <div class="col-2 mx-2">
                                 <div class="row">
                                   <div class="col">
-                                    Error Type
+                                    <p class="fs-4">Error Type</p>
                                   </div>
                                   <div class="col-auto">
                                     <div class="row g-1">
@@ -152,7 +152,7 @@
                               <div class="col-2 mx-2">
                                 <div class="row">
                                   <div class="col">
-                                    Test Type
+                                    <p class="fs-4">Test Type</p>
                                   </div>
                                   <div class="col-auto">
                                     <div class="row g-1">
@@ -173,7 +173,7 @@
                               <div class="col-2 mx-2">
                                 <div class="row">
                                   <div class="col">
-                                    Test Group
+                                    <p class="fs-4">Test Group</p>
                                   </div>
                                   <div class="col-auto">
                                     <div class="row g-1">
@@ -199,7 +199,7 @@
                   </div>
                   <div id="container-table-test-count" class="row m-0 my-4 fs-6 fw-bold">
                   </div>
-                  <div class="container-select-test row m-0 my-4">
+                  <div class="container-select-test  row m-0 my-4">
                     <table id="table-select-tests" class="table table-striped table-hover">
                       <thead>
                         <tr id="head">
@@ -237,7 +237,7 @@
                     <button id="button-collapse-all" class="btn btn-primary me-md-2" type="button">Collapse all</button>
                     <button id="button-matching" class="btn btn-primary" type="button">Toggle matching</button>
                   </div>
-                  <div id="compare" class="row visually-hidden border">
+                  <div id="compare" class="row justify-content-center visually-hidden border">
                     <div class="col-6" id="results1">
                       <p id="heading-result1" class="text-center fs-3 fs-bold text-primary"></p>
                       <div id="container-test-overview-1">
@@ -253,8 +253,8 @@
                       </div>
                     </div>
                   </div>
-                  <div id="single" class="row visually-hidden border">
-                    <div class="col-12" id="results">
+                  <div id="single" class="row justify-content-center visually-hidden">
+                    <div class="col-12 col-max-width border" id="results">
                       <div id="container-test-overview">
                       </div>
                       <div id="container-test-details" class="visually-hidden">
