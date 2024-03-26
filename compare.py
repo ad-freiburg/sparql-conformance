@@ -143,7 +143,8 @@ def main():
         with open("../test-web/workflow.json", "w") as file:
             json.dump(workflow, file, indent=4)
         print("New run")
-        print("Link to look at run: https://sirdnarch.github.io/test-web/index.html")
+        link = "Link to look at run: https://sirdnarch.github.io/test-web/index.html"
+        print(link)
     os.system(f'echo "status={status}" >> $GITHUB_ENV')
     os.system(f'echo "msg={msg}" >> $GITHUB_ENV')
     os.system(f'echo "link={link}" >> $GITHUB_ENV')
