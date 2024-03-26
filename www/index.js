@@ -143,7 +143,7 @@ $(document).ready(async function() {
             if (testName != currentTestName) {
                 $("#table-select-tests tr").removeClass("row-selected");
                 $(this).addClass("row-selected");
-                buildTestInformation(testName, jsonArray, selectedRun, selectedRun2);
+                buildTestInformation(testName, jsonArray, selectedRun, selectedRun2, nameMap);
             }
             currentTestName = testName;
             showCorrectElement(currentTestName, selectedRun2)
@@ -166,7 +166,7 @@ $(document).ready(async function() {
         currentArray = filterTable($("#search-input").val(), jsonArray);
         buildTable(currentArray, currentTestName);
         showCorrectElement(currentTestName, selectedRun2);
-        updateRunSelectionText(selectedRun, selectedRun2, compareRunInformation);
+        updateRunSelectionText(selectedRun, selectedRun2, compareRunInformation, nameMap);
     });
 
     $("#table-select-runs2").on("click", "tr", function() {
@@ -188,7 +188,7 @@ $(document).ready(async function() {
         currentArray = filterTable($("#search-input").val(), jsonArray);
         buildTable(currentArray, currentTestName);
         showCorrectElement(currentTestName, selectedRun2);
-        updateRunSelectionText(selectedRun, selectedRun2, compareRunInformation);
+        updateRunSelectionText(selectedRun, selectedRun2, compareRunInformation, nameMap);
     });
 
 });
@@ -200,7 +200,7 @@ function goBackToOverview() {
     buttonExpand.click();
 }
 
-function updateRunSelectionText(selectedRun, selectedRun2, compareRunInformation) {
+function updateRunSelectionText(selectedRun, selectedRun2, compareRunInformation, nameMap) {
 
     function generateInfoArrow(label1, label2, count) {
         return `<p class="text-center fs-5 m-0 p-0" data-bs-toggle="tooltip" data-bs-title="David Nig"><label class="text-primary">${label1}</label> &larr; <label class="text-info">prev. ${label2}</label> : ${count}</p>`;
@@ -229,10 +229,20 @@ function updateRunSelectionText(selectedRun, selectedRun2, compareRunInformation
     var paragraph = document.getElementById("run-selection-text");
     paragraph.innerHTML = "";
     paragraphInfo.innerHTML = "";
-    if (selectedRun2 == -1) {
-        paragraph.innerHTML = `Show test results for <label class="text-primary">${selectedRun}</label>`;
+    if (selectedRun in nameMap) {
+        name1 = nameMap[selectedRun];
     } else {
-        paragraph.innerHTML = `Compare <label class="text-primary">${selectedRun}</label> with <label class="text-info">${selectedRun2}</label>`;
+        name1 = selectedRun;
+    }
+    if (selectedRun2 in nameMap) {
+        name2 = nameMap[selectedRun2];
+    } else {
+        name2 = selectedRun2;
+    }
+    if (selectedRun2 == -1) {
+        paragraph.innerHTML = `Show test results for <label class="text-primary">${name1}</label>`;
+    } else {
+        paragraph.innerHTML = `Compare <label class="text-primary">${name1}</label> with <label class="text-info">${name2}</label>`;
         for (let key in compareRunInformation) {
             if (compareRunInformation[key] == 0) {
                 continue;
@@ -450,13 +460,21 @@ function buildTable(jsonArray, currentTestName) {
     }
 }
 
-function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2) {
+function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2, nameMap) {
     var testDetails = jsonArray.find((test) => test.name === testName);
     if (selectedRun2 != -1) {
         var run1Heading = document.getElementById("heading-result1");
         var run2Heading = document.getElementById("heading-result2");
-        run1Heading.innerHTML = selectedRun;
-        run2Heading.innerHTML = selectedRun2;
+        if (selectedRun in nameMap) {
+            run1Heading.innerHTML = nameMap[selectedRun];
+        } else {
+            run1Heading.innerHTML = selectedRun;
+        }
+        if (selectedRun2 in nameMap) {
+            run2Heading.innerHTML = nameMap[selectedRun2];
+        } else {
+            run2Heading.innerHTML = selectedRun2;
+        }
     }
     var header = document.getElementById("test-info-header");
     var labelClass = "tests-passed";
@@ -468,7 +486,24 @@ function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2) {
             labelClass = "tests-passedFailed";
             break;
     }
-    header.innerHTML = `<p>${testDetails.name}</p><p><label class="${labelClass}">${testDetails.status}</label> ${testDetails.errorType}</p>`;
+    header.innerHTML = `<p>${testDetails.name}</p>`;
+    if (selectedRun2 != -1) {
+        if (selectedRun in nameMap) {
+            name1 = nameMap[selectedRun];
+        } else {
+            name1 = selectedRun;
+        }
+        if (selectedRun2 in nameMap) {
+            name2 = nameMap[selectedRun2];
+        } else {
+            name2 = selectedRun2;
+        }
+        header.innerHTML += `<p><label class="text-primary">${name1}</label>: <label class="${labelClass}">${testDetails["status"]}</label> ${testDetails.errorType}</p>`;
+        header.innerHTML += `<p><label class="text-info">${name2}</label>: <label class="${labelClass}">${testDetails["status-run2"]}</label> ${testDetails["errorType-run2"]}</p>`;
+    } else {
+        header.innerHTML += `<p><label class="${labelClass}">${testDetails.status}</label> ${testDetails.errorType}</p>`;
+
+    }
 
     var buttonNodes = document.querySelectorAll(`#buttons-text input`);
     buttonNodes.forEach(function(node) {
@@ -486,11 +521,14 @@ function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2) {
         if (testDetails.status != "Failed" || testDetails.errorType == "RESULTS NOT THE SAME" || testDetails.errorType == "QUERY RESULT FORMAT ERROR") {
             queryResult = [testDetails.gotHtml, testDetails.gotHtmlRed];
             expectedResult = [testDetails.expectedHtml, testDetails.expectedHtmlRed];
-            queryKey = ["gotHtml", "gotHtmlRed"];
-            expectedKey = ["expectedHtml", "expectedHtmlRed"];
         } else {
             queryResult = testDetails.queryLog;
             expectedResult = testDetails.resultFile;
+        }
+        if (testDetails["status-run2"] != "Failed" || testDetails["errorType-run2"]  == "RESULTS NOT THE SAME" || testDetails["errorType-run2"]  == "QUERY RESULT FORMAT ERROR") {
+            queryKey = ["gotHtml", "gotHtmlRed"];
+            expectedKey = ["expectedHtml", "expectedHtmlRed"];
+        } else {
             queryKey = "queryLog";
             expectedKey = "resultFile";
         }
@@ -866,9 +904,12 @@ function showCorrectElement(currentTestName, selectedRun2) {
 }
 
 function createInfoElement(heading, text, text2) {
-    var className = ""
+    if (text == "") {
+        text = heading + " is empty!";
+    }
+    var className = "";
     if (text2 != null) {
-        className = "normalText"
+        className = "normalText";
     }
     var id = Math.random().toString(36).slice(2, 11);
     var html = `<div class="row container-info ">`;
@@ -876,11 +917,11 @@ function createInfoElement(heading, text, text2) {
     html += `<a id="a-${id}" class="link-collapse" data-bs-toggle="collapse" href="#c-${id}" role="button" aria-expanded="true" aria-controls="c-${id}">`;
     html += `<strong>${heading} </strong><i class="arrow up"></i></a>`;
     html += `<div class="collapse show" id="c-${id}"><div class="card card-body">`;
-    html += `<pre class="${className}">${text}</pre>`
+    html += `<pre class="${className}">${text}</pre>`;
     if (text2 != null) {
-        html += `<pre class="redText visually-hidden">${text2}</pre>`
+        html += `<pre class="redText visually-hidden">${text2}</pre>`;
     }
-    html += `</div></div></div></div>`
+    html += `</div></div></div></div>`;
     return html;
 }
 
