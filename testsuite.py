@@ -4,6 +4,7 @@ import os
 import csv
 import sys
 import json
+import bz2
 from backend.models import TestObject, Config, SERVER_ERROR, FAILED, PASSED, INTENDED, QUERY_EXCEPTION, REQUEST_ERROR, UNDEFINED_ERROR, INDEX_BUILD_ERROR, SERVER_ERROR, NOT_TESTED, RESULTS_NOT_THE_SAME, INTENDED_MSG, EXPECTED_EXCEPTION, NOT_SUPPORTED
 import backend.models as vars
 from backend.extract_tests import extract_tests
@@ -432,12 +433,16 @@ class TestSuite:
         self.run_protocol_tests(self.tests["Protocol"])
         self.run_protocol_tests(self.tests["GraphStoreProtocol"])
 
+    def compress_json_bz2(self, input_data, output_filename):
+        with bz2.open(output_filename, "wt", encoding="utf-8") as zipfile:
+            json.dump(input_data, zipfile, indent=4)
+
     def generate_json_file(self):
         """
         Generates a JSON file with the test results.
         """
         os.makedirs("./results", exist_ok=True)
-        file_path = f"./results/{self.name}.json"
+        file_path = f"./results/{self.name}.json.bz2"
         data = {}
 
         for test_format in self.tests:
@@ -476,8 +481,7 @@ class TestSuite:
                 self.passed -
                 self.failed -
                 self.passed_failed)}
-        with open(file_path, "w") as file:
-            json.dump(data, file, indent=4)
+        self.compress_json_bz2(data, file_path)
 
 
 def main():
