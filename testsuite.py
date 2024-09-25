@@ -434,8 +434,9 @@ class TestSuite:
         self.run_protocol_tests(self.tests["GraphStoreProtocol"])
 
     def compress_json_bz2(self, input_data, output_filename):
-        with bz2.open(output_filename, "wt", encoding="utf-8") as zipfile:
+        with bz2.open(output_filename, "wt") as zipfile:
             json.dump(input_data, zipfile, indent=4)
+        print("Done writing result file: " + output_filename)
 
     def generate_json_file(self):
         """
@@ -481,6 +482,7 @@ class TestSuite:
                 self.passed -
                 self.failed -
                 self.passed_failed)}
+        print("Writing file...")
         self.compress_json_bz2(data, file_path)
 
 
