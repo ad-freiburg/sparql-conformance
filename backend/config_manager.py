@@ -53,8 +53,10 @@ def create_config(
         "alias": {
             "http://www.w3.org/2001/XMLSchema#integer": "http://www.w3.org/2001/XMLSchema#int",
             "http://www.w3.org/2001/XMLSchema#double": "http://www.w3.org/2001/XMLSchema#decimal",
+            "http://www.w3.org/2001/XMLSchema#float": "http://www.w3.org/2001/XMLSchema#decimal",
             "http://www.w3.org/2001/XMLSchema#int": "http://www.w3.org/2001/XMLSchema#integer",
             "http://www.w3.org/2001/XMLSchema#decimal": "http://www.w3.org/2001/XMLSchema#double",
+            "http://www.w3.org/2001/XMLSchema#decimal": "http://www.w3.org/2001/XMLSchema#float",
             "http://www.w3.org/2001/XMLSchema#string": None},
         "number_types": [
             "http://www.w3.org/2001/XMLSchema#integer",
