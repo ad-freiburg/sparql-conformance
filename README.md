@@ -46,10 +46,4 @@ If this is the first run it will generate a directory called results. All result
 
 ### View and compare results
 
-If you want to visualize the results you can start a webserver from the testsuite.py directory. For example use python -m http.server.
-
-```
-python3 -m http.server
-```
-
-Using this example you can visit the website at http://0.0.0.0:8000/www/
+If you want to visualize the results you can use the TODO.

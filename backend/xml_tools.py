@@ -409,15 +409,20 @@ def compare_xml(
             map_bnodes)
 
     # Compare and remove equal <boolean>
-    bool1 = expected_tree.find(
+    expected_bool = expected_tree.find(
         ".//{http://www.w3.org/2005/sparql-results#}boolean")
-    bool2 = query_tree.find(
+    query_bool = query_tree.find(
         ".//{http://www.w3.org/2005/sparql-results#}boolean")
-    if bool1 is not None and bool2 is not None:
-        if str(bool1.text) == str(bool2.text):
-            expected_tree.getroot().remove(bool1)
-            query_tree.getroot().remove(bool2)
+    if expected_bool is not None and query_bool is not None:
+        if str(expected_bool.text) == str(query_bool.text):
+            expected_tree.getroot().remove(expected_bool)
+            query_tree.getroot().remove(query_bool)
 
+    expected_bool = expected_tree.find(
+        ".//{http://www.w3.org/2005/sparql-results#}boolean")
+    query_bool = query_tree.find(
+        ".//{http://www.w3.org/2005/sparql-results#}boolean")
+    
     # Compare and remove equal <result> elements in <results>
     results1 = expected_tree.find(
         ".//{http://www.w3.org/2005/sparql-results#}results")
@@ -461,8 +466,9 @@ def compare_xml(
             if len(list(results1)) == 0 and len(list(results2)) == 0:
                 status = INTENDED
                 error_type = INTENDED_MSG
+        elif expected_bool is None and query_bool is None:
+            status = PASSED
 
     expected_string, query_string, expected_string_red, query_string_red = generate_html_for_xml(
         expected_xml, query_xml, copied_expected_tree, copied_query_tree, expected_tree, query_tree, number_types)
-
     return status, error_type, expected_string, query_string, expected_string_red, query_string_red
