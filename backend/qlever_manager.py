@@ -4,8 +4,10 @@ import requests
 import subprocess
 from backend.rdf_tools import write_ttl_file, delete_ttl_file, rdf_xml_to_turtle
 
-
 def index(command_index: str, graph_path: str) -> tuple:
+    return index_list(command_index, [graph_path])
+
+def index_list(command_index: str, graph_paths: list) -> tuple:
     """
     Executes a command to index a graph file using the QLever IndexBuilderMain binary.
 
@@ -16,15 +18,25 @@ def index(command_index: str, graph_path: str) -> tuple:
     Returns:
         tuple (bool, string): Returns the status as a bool and the error message or the index build log
     """
-    remove = False
-    if graph_path.endswith(".rdf"):
-        remove = True
-        graph_path_new = graph_path.replace(".rdf", ".ttl")
-        write_ttl_file(graph_path_new, rdf_xml_to_turtle(graph_path))
-        graph_path = graph_path_new
+    print(graph_paths)
+    remove_paths = []
+    graphs = ""
+    for graph_path in graph_paths:
+        if graph_path.endswith(".rdf"):
+            remove_paths.append(graph_path)
+            graph_path_new = graph_path.replace(".rdf", ".ttl")
+            write_ttl_file(graph_path_new, rdf_xml_to_turtle(graph_path))
+            graph_path = graph_path_new
+        if graphs == "":
+            graph_name = "-"
+        else:
+            graph_name = graph_path.split("/")[-1]
+        print(graph_path.split("/")[-1])
+        graphs += f" -f {graph_path} -F ttl -g {graph_name}" 
+
     status = False
     try:
-        cmd = f"{command_index}{graph_path}"
+        cmd = command_index + graphs
         process = subprocess.Popen(
             cmd,
             shell=True,
@@ -36,8 +48,8 @@ def index(command_index: str, graph_path: str) -> tuple:
         index_log = output.decode("utf-8")
         if "Index build completed" in index_log:
             status = True
-        if remove:
-            delete_ttl_file(graph_path)
+        for path in remove_paths:
+            delete_ttl_file(path)
         return status, index_log
     except Exception as e:
         return status, f"Exception executing index command: {str(e)}"
