@@ -22,10 +22,10 @@ def extract_tests(config: Config):
         qlever.remove_index(config.command_remove_index)
         index = qlever.index(
             config.command_index,
-            os.path.join(
+            [os.path.join(
                 config.path_to_test_suite,
                 path,
-                "manifest.ttl"))
+                "manifest.ttl")])
         if not index[0]:
             print(index[1])
             continue
