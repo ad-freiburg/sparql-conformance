@@ -12,7 +12,7 @@ from backend.xml_tools import compare_xml
 from backend.tsv_csv_tools import compare_sv
 from backend.json_tools import compare_json
 from backend.rdf_tools import compare_ttl
-from backend.protocol_tools import run_protocol_test
+from backend.protocol_tools import run_protocol_test, compare_response
 import backend.util as util
 
 
@@ -103,7 +103,6 @@ class TestSuite:
             graphs = test.namedGraphs.split(";")
             for graph in graphs:
                 graph_path += f";{os.path.join(self.config.path_to_test_suite, test.group, graph)}"
-        print(graph_path)
         if graph_path in graphs_list_of_tests:
             graphs_list_of_tests[graph_path].append(test)
         else:
@@ -278,11 +277,11 @@ class TestSuite:
         Executes update tests for each graph in the test suite.
         """
         for graph in graphs_list_of_tests:
-            graph_path = os.path.join(self.config.path_to_test_suite, graph)
-            print(f"Running update tests for graph: {graph_path}")
+            graphs = graph.split(";")
+            print(f"Running update tests for graph: {graphs}")
             for test in graphs_list_of_tests[graph]:
                 if not self.prepare_test_environment(
-                        [graph_path], graphs_list_of_tests[graph]):
+                        graphs, graphs_list_of_tests[graph]):
                     break
                 result_format = test.result[test.result.rfind(".") + 1:]
                 query_update_result = qlever.query(
@@ -487,26 +486,6 @@ class TestSuite:
 
 
 def main():
-    """print("TEST")
-    expected = '''<?xml version="1.0"?>
-<sparql xmlns="http://www.w3.org/2005/sparql-results#"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://www.w3.org/2001/sw/DataAccess/rf1/result2.xsd">
-
-  <head>
-    <link href="sparqldl-06.rq" />
-  </head>
-
-  <boolean>false</boolean>
-
-</sparql>'''
-    got = '''<?xml version="1.0"?>
-<sparql xmlns="http://www.w3.org/2005/sparql-results#">
-  <head/>
-  <boolean>false</boolean>
-</sparql>'''
-    compare_xml(expected_xml=expected,query_xml=got, alias={}, number_types=[])
-    """
     args = sys.argv[1:]
     if len(args) < 1:
         print(f"  Usage to create config: python3 {sys.argv[0]} config <server address> <port> <path to testsuite> <path to the qlever binaries>  <graph store implementation host> <path of the URL of the graph store> <URL returned in the Location HTTP header>\n  Usage to extract tests: python3 {sys.argv[0]} extract \n  Usage to run tests: python3 {sys.argv[0]} <name for the test suite run>")
@@ -546,6 +525,7 @@ def main():
         print(f"  Usage to create config: python3 {sys.argv[0]} config <server address> <port> <path to testsuite> <path to binaries> <graph store implementation host> <path of the URL of the graph store> <URL returned in the Location HTTP header> \n  Usage to extract tests: python3 {sys.argv[0]} extract \n  Usage to run tests: python3 {sys.argv[0]} <name for the test suite run>")
         return
     print("Done!")
+    return
 
 
 

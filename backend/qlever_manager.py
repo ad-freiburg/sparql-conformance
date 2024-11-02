@@ -26,13 +26,15 @@ def index(command_index: str, graph_paths: list) -> tuple:
         if graphs == "":
             graph_name = "-"
         else:
-            graph_name = graph_path.split("/")[-1]
+            if "%" in graph_path:
+                graph_path, graph_name = graph_path.split("%")
+            else:
+                graph_name = graph_path.split("/")[-1]
         graphs += f" -f {graph_path} -F ttl -g {graph_name}" 
 
     status = False
     try:
         cmd = command_index + graphs
-        print(cmd)
         process = subprocess.Popen(
             cmd,
             shell=True,
