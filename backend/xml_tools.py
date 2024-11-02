@@ -468,6 +468,7 @@ def compare_xml(
                 error_type = INTENDED_MSG
         elif expected_bool is None and query_bool is None:
             status = PASSED
+            error_type = ""
 
     expected_string, query_string, expected_string_red, query_string_red = generate_html_for_xml(
         expected_xml, query_xml, copied_expected_tree, copied_query_tree, expected_tree, query_tree, number_types)

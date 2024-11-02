@@ -394,6 +394,7 @@ def compare_json(
             del expected["boolean"]
             del query["boolean"]
             status = PASSED
+            error_type = ""
         expected_string = generate_highlighted_string_json(
             json.loads(expected_json), expected, [])
         query_string = generate_highlighted_string_json(

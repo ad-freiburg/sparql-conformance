@@ -66,7 +66,7 @@ def compare_response(expected_response: dict, got_response: str) -> bool:
     result_match = False
 
     for status_code in expected_response["status_codes"]:
-        pattern = r""
+        pattern = r"HTTP/1\.1 "
         for digit in status_code:
             if digit == "x":
                 pattern += "\\d"
