@@ -8,7 +8,7 @@ PREFIX sd:      <http://www.w3.org/ns/sparql-service-description#>
 PREFIX ent:     <http://www.w3.org/ns/entailment/RDF>
 PREFIX rs:      <http://www.w3.org/2001/sw/DataAccess/tests/result-set#>
 
-SELECT DISTINCT ?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?approvedBy ?regime # ?graphStore ?graphLabel ?graphData ?actionGraphStore ?actionGraphLabel ?actionGraphData
+SELECT DISTINCT ?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?approvedBy ?regime (GROUP_CONCAT(DISTINCT CONCAT(STR(?actionGraphStore), "%", STR(?actionGraphLabel)); SEPARATOR=";") AS ?graphDatas) # ?graphStore ?graphLabel ?graphData ?actionGraphStore ?actionGraphLabel ?actionGraphData
 WHERE {
     ?test rdf:type mf:UpdateEvaluationTest .
     BIND ("UpdateEvaluationTest" AS ?type) .
@@ -16,6 +16,7 @@ WHERE {
     ?action ut:request ?query .
     OPTIONAL  { ?action ut:data ?data .} 
     OPTIONAL  { ?action ut:graphData ?actionGraphData .}
+    OPTIONAL {?action sd:entailmentRegime ?regime .}
     OPTIONAL  { ?actionGraphData ut:graph ?actionGraphStore .}
     OPTIONAL  { ?actionGraphData rdfs:label ?actionGraphLabel .}
     ?test mf:result ?resultObject .
@@ -29,3 +30,4 @@ WHERE {
     OPTIONAL {?test dawgt:approval ?approval }.
     OPTIONAL {?test dawgt:approvedBy  ?approvedBy }.
 }
+GROUP BY ?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?approvedBy ?regime

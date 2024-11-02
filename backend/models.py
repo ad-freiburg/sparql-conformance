@@ -17,7 +17,7 @@ EXPECTED_EXCEPTION = "EXPECTED: QUERY EXCEPTION ERROR"
 FORMAT_ERROR = "QUERY RESULT FORMAT ERROR"
 NOT_SUPPORTED = "CONTENT TYPE NOT SUPPORTED"
 
-# ?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?approvedBy ?regime ?graphStore ?graphLabel ?graphData ?actionGraphStore ?actionGraphLabel ?actionGraphData group
+# ?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?approvedBy ?regime ?actionGraphData # ?graphStore ?graphLabel ?graphData ?actionGraphStore ?actionGraphLabel ?actionGraphData
 
 
 class TestObject:
@@ -35,6 +35,7 @@ class TestObject:
         self.query = row[2]
         self.graph = row[4]
         self.result = row[3]
+        self.namedGraphs = row[11]
         """self.graphStore = row[11]
         self.graphLabel = row [12]
         self.graphData = row[13]
@@ -89,6 +90,7 @@ class TestObject:
             "query": util.escape(self.query),
             "graph": util.escape(self.graph),
             "result": util.escape(self.result),
+            "namedGraphs": util.escape(self.namedGraphs),
             "queryFile": util.escape(self.queryFile),
             "graphFile": util.escape(self.graphFile),
             "resultFile": util.escape(self.resultFile),

@@ -66,13 +66,15 @@ def compare_response(expected_response: dict, got_response: str) -> bool:
     result_match = False
 
     for status_code in expected_response["status_codes"]:
-        pattern = r""
+        pattern = r"HTTP/1\.1 "
         for digit in status_code:
             if digit == "x":
                 pattern += "\\d"
             else:
                 pattern += digit
+        print(pattern)
         found_status_code = re.search(pattern, got_response)
+        print(found_status_code)
         if found_status_code is not None:
             status_code_match = True
 
@@ -93,6 +95,7 @@ def compare_response(expected_response: dict, got_response: str) -> bool:
             expected_response["result"], response_ttl)
         if status == "Passed":
             result_match = True
+    print(status_code_match)
     return status_code_match and content_type_match and result_match
 
 

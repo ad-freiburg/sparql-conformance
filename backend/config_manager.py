@@ -33,7 +33,7 @@ def create_config(
         "HOST": host,
         "GRAPHSTORE": graphstore,
         "NEWPATH": newpath,
-        "command_index": f"{path_to_index_builder} -F ttl -s TestSuite.settings.json -i TestSuite -f ",
+        "command_index": f"{path_to_index_builder} -s TestSuite.settings.json -i TestSuite ",
         "command_start_server": f"{path_to_server_main} -i TestSuite -j 8 -p {port} > TestSuite.server-log.txt",
         "command_stop_server": f"pkill -f '{path_to_server_main} -i [^ ]*TestSuite'",
         "command_remove_index": "rm -f TestSuite.index.* TestSuite.vocabulary.* TestSuite.prefixes TestSuite.meta-data.json TestSuite.index-log.txt",
