@@ -253,85 +253,61 @@ def xml_elements_equal(
             if element1.text not in map_bnodes and element2.text not in map_bnodes:
                 map_bnodes[element1.text] = element2.text
                 map_bnodes[element2.text] = element1.text
-                return all(
-                    xml_elements_equal(
-                        c1,
-                        c2,
-                        compare_with_intended_behaviour,
-                        alias,
-                        number_types,
-                        map_bnodes) for c1,
-                    c2 in zip(
-                        element1,
-                        element2))
+                return all(any(xml_elements_equal(
+                    c1,
+                    c2,
+                    compare_with_intended_behaviour,
+                    alias,
+                    number_types,
+                    map_bnodes) for c2 in element2) for c1 in element1)
             elif map_bnodes.get(element1.text) == element2.text and map_bnodes.get(element2.text) == element1.text:
-                return all(
-                    xml_elements_equal(
-                        c1,
-                        c2,
-                        compare_with_intended_behaviour,
-                        alias,
-                        number_types,
-                        map_bnodes) for c1,
-                    c2 in zip(
-                        element1,
-                        element2))
+                return all(any(xml_elements_equal(
+                    c1,
+                    c2,
+                    compare_with_intended_behaviour,
+                    alias,
+                    number_types,
+                    map_bnodes) for c2 in element2) for c1 in element1)
             return False
         if (element1.text is None and element2.text.strip() == "") or (
                 element2.text is None and element1.text.strip() == ""):
-            return all(
-                xml_elements_equal(
+            return all(any(xml_elements_equal(
                     c1,
                     c2,
                     compare_with_intended_behaviour,
                     alias,
                     number_types,
-                    map_bnodes) for c1,
-                c2 in zip(
-                    element1,
-                    element2))
+                    map_bnodes) for c2 in element2) for c1 in element1)
         if element1.text is None or element2.text is None:
             return False
         if element1.text.strip() == element2.text.strip():
-            return all(
-                xml_elements_equal(
+            return all(any(xml_elements_equal(
+                c1,
+                c2,
+                compare_with_intended_behaviour,
+                alias,
+                number_types,
+                map_bnodes) for c2 in element2) for c1 in element1)
+        if is_number:
+            if float(element1.text) == float(element2.text):
+                return all(any(xml_elements_equal(
                     c1,
                     c2,
                     compare_with_intended_behaviour,
                     alias,
                     number_types,
-                    map_bnodes) for c1,
-                c2 in zip(
-                    element1,
-                    element2))
-        if is_number:
-            if float(element1.text) == float(element2.text):
-                return all(
-                    xml_elements_equal(
-                        c1,
-                        c2,
-                        compare_with_intended_behaviour,
-                        alias,
-                        number_types,
-                        map_bnodes) for c1,
-                    c2 in zip(
-                        element1,
-                        element2))
+                    map_bnodes) for c2 in element2) for c1 in element1)
         if (alias.get(element1.text) != element2.text and alias.get(
                 element2.text) != element1.text) or not compare_with_intended_behaviour:
             return False
 
-    return all(
-        xml_elements_equal(
+    return all(any(xml_elements_equal(
             c1,
             c2,
             compare_with_intended_behaviour,
             alias,
             number_types,
-            map_bnodes) for c1,
-        c2 in zip(
-            element1,
-            element2))
+            map_bnodes) for c2 in element2) for c1 in element1)
 
 
 def xml_remove_equal_elements(
