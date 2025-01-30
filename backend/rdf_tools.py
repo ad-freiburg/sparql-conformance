@@ -37,36 +37,33 @@ def copy_namespaces(source_graph, target_graph):
 
 
 def highlight_differences(turtle_data, diff):
-    namespace_to_prefix = {}
-    for prefix, namespace in turtle_data.namespaces():
-        namespace_to_prefix[namespace] = prefix
-    diff.serialize(format="turtle")
-    turtle_data = escape(turtle_data.serialize(format="turtle"))
-
+    # Serialize the main graph to turtle (escaped for HTML rendering)
+    serialized_turtle = escape(turtle_data.serialize(format="turtle"))
+    
     for s, p, o in diff:
-        for namespace in namespace_to_prefix:
-            if s.startswith(namespace):
-                s = s.replace(namespace, f"{namespace_to_prefix[namespace]}:")
-            if p.startswith(namespace):
-                p = p.replace(namespace, f"{namespace_to_prefix[namespace]}:")
-            if o.startswith(namespace):
-                o = o.replace(namespace, f"{namespace_to_prefix[namespace]}:")
-        s, p, o = re.escape(
-            escape(s)), re.escape(
-            escape(p)), re.escape(
-            escape(o))
-        pattern = rf"{s}(?:[^.]*?)?{p}\s+(?:[^.]*?){o}[^.]*?\s+\.(?!</label>)"
+        s_prefixed = s.n3(namespace_manager=turtle_data.namespace_manager)
+        p_prefixed = p.n3(namespace_manager=turtle_data.namespace_manager)
+        o_prefixed = o.n3(namespace_manager=turtle_data.namespace_manager)
+
+        # Escape for matching
+        s_escaped = re.escape(escape(s_prefixed))
+        p_escaped = re.escape(escape(p_prefixed))
+        o_escaped = re.escape(escape(o_prefixed))
+
+        # This matches the whole line of the triple.
+        pattern = rf"{s_escaped}(?:[^.]*?)?{p_escaped}\s+(?:[^.]*?){o_escaped}[^.]*?\s+\.(?!</label>)"
 
         def replace_first_match(match):
             return f'<label class="red">{match.group()}</label>'
-        turtle_data = re.sub(
+
+        serialized_turtle = re.sub(
             pattern,
             replace_first_match,
-            turtle_data,
-            flags=re.DOTALL)
+            serialized_turtle,
+            flags=re.DOTALL
+        )
 
-    return turtle_data
-
+    return serialized_turtle
 
 def compare_ttl(expected_ttl: str, query_ttl: str) -> tuple:
     """

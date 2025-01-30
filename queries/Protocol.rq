@@ -8,7 +8,7 @@ PREFIX sd:      <http://www.w3.org/ns/sparql-service-description#>
 PREFIX ent:     <http://www.w3.org/ns/entailment/RDF>
 PREFIX rs:      <http://www.w3.org/2001/sw/DataAccess/tests/result-set#>
 
-SELECT ?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?approvedBy ?regime ?actionGraphData # ?graphStore ?graphLabel ?graphData ?actionGraphStore ?actionGraphLabel ?actionGraphData
+SELECT ?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?approvedBy ?regime ?actionGraphData ?resultgraphData
 WHERE {
     ?test rdf:type mf:ProtocolTest .
     BIND ("ProtocolTest" AS ?type) .

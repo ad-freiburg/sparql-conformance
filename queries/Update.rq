@@ -8,22 +8,26 @@ PREFIX sd:      <http://www.w3.org/ns/sparql-service-description#>
 PREFIX ent:     <http://www.w3.org/ns/entailment/RDF>
 PREFIX rs:      <http://www.w3.org/2001/sw/DataAccess/tests/result-set#>
 
-SELECT DISTINCT ?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?approvedBy ?regime (GROUP_CONCAT(DISTINCT CONCAT(STR(?actionGraphStore), "%", STR(?actionGraphLabel)); SEPARATOR=";") AS ?graphDatas) # ?graphStore ?graphLabel ?graphData ?actionGraphStore ?actionGraphLabel ?actionGraphData
+SELECT DISTINCT ?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?approvedBy ?regime (GROUP_CONCAT(DISTINCT CONCAT(STR(?actionGraphStore), "%", STR(?actionGraphLabel)); SEPARATOR=";") AS ?graphDatas) (GROUP_CONCAT(DISTINCT CONCAT(STR(?resultGraphStore), "%", STR(?resultGraphLabel)); SEPARATOR=";") AS ?resultgraphDatas) 
 WHERE {
     ?test rdf:type mf:UpdateEvaluationTest .
     BIND ("UpdateEvaluationTest" AS ?type) .
     ?test mf:action ?action .
     ?action ut:request ?query .
     OPTIONAL  { ?action ut:data ?data .} 
-    OPTIONAL  { ?action ut:graphData ?actionGraphData .}
+    OPTIONAL  { 
+        ?action ut:graphData ?actionGraphData .
+        ?actionGraphData ut:graph ?actionGraphStore .
+        ?actionGraphData rdfs:label ?actionGraphLabel .
+    }
     OPTIONAL {?action sd:entailmentRegime ?regime .}
-    OPTIONAL  { ?actionGraphData ut:graph ?actionGraphStore .}
-    OPTIONAL  { ?actionGraphData rdfs:label ?actionGraphLabel .}
     ?test mf:result ?resultObject .
     OPTIONAL  { ?resultObject ut:data ?result } .
-    OPTIONAL  { ?resultObject ut:graphData ?graphData .}
-    OPTIONAL  { ?graphData ut:graph ?graphStore .}
-    OPTIONAL  { ?graphData rdfs:label ?graphLabel .}
+    OPTIONAL  { 
+        ?resultObject ut:graphData ?graphData .
+        ?graphData ut:graph ?resultGraphStore .
+        ?graphData rdfs:label ?resultGraphLabel .
+    }
     OPTIONAL {?test mf:name ?name }.
     OPTIONAL {?test mf:feature ?feature }.
     OPTIONAL {?test rdfs:comment ?comment }.
