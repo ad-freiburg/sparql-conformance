@@ -161,7 +161,7 @@ def query(query, type, result_format, server_address, port) -> tuple:
     else:
         content_type = "application/sparql-update; charset=utf-8"
 
-    url = server_address + ":" + port
+    url = server_address + ":" + port + "?access-token=abc"
     headers = {"Accept": accept, "Content-type": content_type}
     try:
         response = requests.post(
