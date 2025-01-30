@@ -99,7 +99,7 @@ class TestSuite:
         else:
             graph_path = os.path.join(self.config.path_to_test_suite, test.group, test.graph)
         
-        if test.namedGraphs != "":
+        if test.namedGraphs != "" and test.namedGraphs != "%":
             graphs = test.namedGraphs.split(";")
             for graph in graphs:
                 graph_path += f";{os.path.join(self.config.path_to_test_suite, test.group, graph)}"
@@ -143,6 +143,54 @@ class TestSuite:
         setattr(test, "expectedHtml", expected_html)
         setattr(test, "gotHtmlRed", test_red)
         setattr(test, "expectedHtmlRed", expected_red)
+
+    def evaluate_update(
+                self,
+                expected_graphs,
+                graphs,
+                test: TestObject):
+        """
+        Evaluates the graphs after running the update.
+
+        Parameters:
+            test (TestObject): Object containing the test being run.
+            expected_graphs ([str]]): The expected state of each graph.
+            graphs ([str]): The actual state of our graphs.
+        """
+        status = [FAILED for i in range(len(expected_graphs))]
+        error_type = [RESULTS_NOT_THE_SAME for i in range(len(expected_graphs))]
+        expected_html = ["" for i in range(len(expected_graphs))]
+        test_html = ["" for i in range(len(expected_graphs))]
+        expected_red = ["" for i in range(len(expected_graphs))]
+        test_red = ["" for i in range(len(expected_graphs))]
+        assert(len(expected_graphs) == len(graphs))
+        for i in range(len(expected_graphs)):
+            status[i], error_type[i], expected_html[i], test_html[i], expected_red[i], test_red[i] = compare_ttl(
+                    expected_graphs[i], graphs[i])
+            
+        for s, e in zip(status, error_type):
+            if s != PASSED:
+                status[0] = s
+                error_type[0] = e
+                break
+        
+        self.update_test_status(test, status[0], error_type[0])
+        t_html = f"<b>default:</b><br>{test_html[0]}"
+        e_html = f"<b>default:</b><br>{expected_html[0]}"
+        t_red = f"<b>default:</b><br>{test_red[0]}"
+        e_red = f"<b>default:</b><br>{expected_red[0]}"
+        i = 1
+        for key, value in test.resultFiles.items():
+            t_html += f"<br><br><b>{key}:</b><br>{test_html[i]}"
+            e_html += f"<br><br><b>{key}:</b><br>{expected_html[i]}"
+            t_red += f"<br><br><b>{key}:</b><br>{test_red[i]}"
+            e_red += f"<br><br><b>{key}:</b><br>{expected_red[i]}"
+            i += 1
+
+        setattr(test, "gotHtml", t_html)
+        setattr(test, "expectedHtml", e_html)
+        setattr(test, "gotHtmlRed", t_red)
+        setattr(test, "expectedHtmlRed", e_red)
 
     def log_for_all_tests(self, list_of_tests: list, attribute: str, log: str):
         """
@@ -282,26 +330,49 @@ class TestSuite:
             for test in graphs_list_of_tests[graph]:
                 if not self.prepare_test_environment(
                         graphs, graphs_list_of_tests[graph]):
+                    # If the environment is not prepared, skip all tests for this graph
                     break
                 result_format = test.result[test.result.rfind(".") + 1:]
+
+                # Execute the update query
                 query_update_result = qlever.query(
                     test.queryFile,
                     "ru",
                     result_format,
                     self.config.server_address,
                     self.config.port)
+                
+                # If the update query was successful, retrieve the current state of all graphs
+                # and check if the results match the expected results
                 if query_update_result[0] == 200:
-                    query_result_graph = qlever.query(
-                        "CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o}",
+                    actual_state_of_graphs = []
+                    expected_state_of_graphs = []
+                    # Handle default graph that has no uri 
+                    construct_graph = qlever.query(
+                        "CONSTRUCT {?s ?p ?o} WHERE { GRAPH ql:default-graph {?s ?p ?o}}",
                         "rq",
-                        result_format,
+                        "ttl",
                         self.config.server_address,
                         self.config.port)
-                    if query_result_graph[0] == 200:
-                        self.evaluate_query(
-                            test.resultFile, query_result_graph[1], test, result_format)
-                    else:
-                        self.process_failed_response(test, query_result_graph)
+                    actual_state_of_graphs.append(construct_graph[1])
+                    expected_state_of_graphs.append(test.resultFile)
+                    
+                    # Handle named graphs
+                    if test.resultGraphs != "%" and test.resultGraphs != "":
+                        for expectedGraph in test.resultGraphs.split(";"):
+                            graph_uri = expectedGraph.split("%")[1]
+                            expected_graph = test.resultFiles[graph_uri]
+                            construct_graph = qlever.query(
+                                f"CONSTRUCT {{?s ?p ?o}} WHERE {{ GRAPH <{graph_uri}> {{?s ?p ?o}}}}",
+                                "rq",
+                                "ttl",
+                                self.config.server_address,
+                                self.config.port)
+                            actual_state_of_graphs.append(construct_graph[1])
+                            expected_state_of_graphs.append(expected_graph)
+
+                    # Evaluate state of graphs
+                    self.evaluate_update(expected_state_of_graphs, actual_state_of_graphs, test)
                 else:
                     self.process_failed_response(test, query_update_result)
 
@@ -483,7 +554,6 @@ class TestSuite:
                 self.passed_failed)}
         print("Writing file...")
         self.compress_json_bz2(data, file_path)
-
 
 def main():
     args = sys.argv[1:]
