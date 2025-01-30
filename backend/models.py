@@ -17,7 +17,7 @@ EXPECTED_EXCEPTION = "EXPECTED: QUERY EXCEPTION ERROR"
 FORMAT_ERROR = "QUERY RESULT FORMAT ERROR"
 NOT_SUPPORTED = "CONTENT TYPE NOT SUPPORTED"
 
-# ?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?approvedBy ?regime ?actionGraphData # ?graphStore ?graphLabel ?graphData ?actionGraphStore ?actionGraphLabel ?actionGraphData
+# ?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?approvedBy ?regime ?actionGraphData ?resultGraphData 
 
 
 class TestObject:
@@ -36,12 +36,7 @@ class TestObject:
         self.graph = row[4]
         self.result = row[3]
         self.namedGraphs = row[11]
-        """self.graphStore = row[11]
-        self.graphLabel = row [12]
-        self.graphData = row[13]
-        self.actionGraphStore = row[14]
-        self.actionGraphLabel = row[15]
-        self.actionGraphData = row[16]"""
+        self.resultGraphs = row[12]
         self.queryFile = util.read_file(
             os.path.join(
                 path_to_test_suite,
@@ -57,6 +52,8 @@ class TestObject:
                 path_to_test_suite,
                 self.group,
                 self.result))
+        self.resultFiles = {}
+        self.indexFiles = {}
         self.status = NOT_TESTED
         self.errorType = ""
         self.expectedHtml = ""
@@ -76,7 +73,39 @@ class TestObject:
         self.response = ""
         self.config = config
 
+        # Handle additional named graphs for the index and the result
+        # namedGraphs = "%" means that there are no additional named graphs
+        # Format is "graph1%uri1;graph2%uri2;graph3%uri3"
+        if self.namedGraphs != "%" and self.namedGraphs != "":
+            graphs = self.namedGraphs.split(";")
+            for graph in graphs:
+                if "%" in graph:
+                    graph_name, graph_uri = graph.split("%")
+                else:
+                    graph_name = graph_uri = graph
+                self.indexFiles[graph_uri] = util.read_file(
+                    os.path.join(
+                        path_to_test_suite,
+                        self.group,
+                        graph_name))
+        
+        if self.resultGraphs != "%" and self.namedGraphs != "":
+            graphs = self.resultGraphs.split(";")
+            for graph in graphs:
+                if "%" in graph:
+                    graph_name, graph_uri = graph.split("%")
+                else:
+                    graph_name = graph_uri = graph
+                self.resultFiles[graph_uri] = util.read_file(
+                    os.path.join(
+                        path_to_test_suite,
+                        self.group,
+                        graph_name))
+
     def to_dict(self):
+        self.graphFile = "<b>default:</b> <br> <pre>" + util.escape(self.graphFile) + "</pre>"
+        for name, graph in self.indexFiles.items():
+            self.graphFile += f"<br><b>{name}:</b> <br> <pre>{util.escape(graph)}</pre>"
         test_dict = {
             "test": util.escape(self.test),
             "type": util.escape(self.type),
@@ -92,7 +121,7 @@ class TestObject:
             "result": util.escape(self.result),
             "namedGraphs": util.escape(self.namedGraphs),
             "queryFile": util.escape(self.queryFile),
-            "graphFile": util.escape(self.graphFile),
+            "graphFile": self.graphFile,
             "resultFile": util.escape(self.resultFile),
             "status": util.escape(self.status),
             "errorType": util.escape(self.errorType),
@@ -112,14 +141,12 @@ class TestObject:
             "protocolSent": util.escape(self.protocolSent),
             "responseExtracted": util.escape(self.responseExtracted),
             "response": util.escape(self.response),
-            "config": util.escape(json.dumps(self.config.to_dict(), indent=4))
+            "config": util.escape(json.dumps(self.config.to_dict(), indent=4)),
+            "namedGraphs": util.escape(self.namedGraphs),
+            "resultGraphs": util.escape(self.resultGraphs),
+            "indexFiles": util.escape(json.dumps(self.indexFiles, indent=4)),
+            "resultFiles": util.escape(json.dumps(self.resultFiles, indent=4))
         }
-        """ "graphStore": util.escape(self.graphStore),
-        "graphLabel": util.escape(self.graphLabel),
-        "graphData": util.escape(self.graphData),
-        "actionGraphStore": util.escape(self.actionGraphStore),
-        "actionGraphLabel": util.escape(self.actionGraphLabel),
-        "actionGraphData": util.escape(self.actionGraphData) """
         return test_dict
 
 
