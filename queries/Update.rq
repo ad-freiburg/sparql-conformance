@@ -8,7 +8,7 @@ PREFIX sd:      <http://www.w3.org/ns/sparql-service-description#>
 PREFIX ent:     <http://www.w3.org/ns/entailment/RDF>
 PREFIX rs:      <http://www.w3.org/2001/sw/DataAccess/tests/result-set#>
 
-SELECT DISTINCT ?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?approvedBy ?regime (GROUP_CONCAT(DISTINCT CONCAT(STR(?actionGraphStore), "%", STR(?actionGraphLabel)); SEPARATOR=";") AS ?graphDatas) (GROUP_CONCAT(DISTINCT CONCAT(STR(?resultGraphStore), "%", STR(?resultGraphLabel)); SEPARATOR=";") AS ?resultgraphDatas) 
+SELECT DISTINCT ?type ?name ?query ?result ?data ?test ?feature ?comment ?approval ?approvedBy ?regime (GROUP_CONCAT(DISTINCT COALESCE(CONCAT(STR(?actionGraphStore), "%", STR(?actionGraphLabel)), "%"); SEPARATOR=";") AS ?graphDatas) (GROUP_CONCAT(DISTINCT COALESCE(CONCAT(STR(?resultGraphStore), "%", STR(?resultGraphLabel)), "%"); SEPARATOR=";") AS ?resultgraphDatas)
 WHERE {
     ?test rdf:type mf:UpdateEvaluationTest .
     BIND ("UpdateEvaluationTest" AS ?type) .
