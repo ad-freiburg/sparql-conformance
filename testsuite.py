@@ -389,15 +389,14 @@ class TestSuite:
         """
         Executes query tests for each graph in the test suite.
         """
-        for graph in graphs_list_of_tests:
-            graph_path = os.path.join(self.config.path_to_test_suite, graph)
+        for graph_path in graphs_list_of_tests:
             print(f"Running syntax tests for graph: {graph_path}")
 
             if not self.prepare_test_environment(
-                    [graph_path], graphs_list_of_tests[graph]):
+                    [graph_path], graphs_list_of_tests[graph_path]):
                 continue
 
-            for test in graphs_list_of_tests[graph]:
+            for test in graphs_list_of_tests[graph_path]:
                 query_result = qlever.query(
                     test.queryFile,
                     "rq",
@@ -422,7 +421,7 @@ class TestSuite:
             if os.path.exists("./TestSuite.server-log.txt"):
                 server_log = util.read_file("./TestSuite.server-log.txt")
                 self.log_for_all_tests(
-                    graphs_list_of_tests[graph],
+                    graphs_list_of_tests[graph_path],
                     "serverLog",
                     util.remove_date_time_parts(server_log))
             qlever.remove_index(self.config.command_remove_index)
@@ -461,15 +460,14 @@ class TestSuite:
         """
         Executes protocol tests for each graph in the test suite.
         """
-        for graph in graphs_list_of_tests:
-            graph_path = os.path.join(self.config.path_to_test_suite, graph)
+        for graph_path in graphs_list_of_tests:
             print(f"Running protocol tests for graph: {graph_path}")
 
-            for test in graphs_list_of_tests[graph]:
+            for test in graphs_list_of_tests[graph_path]:
                 status, error_type, comment = self.get_comment(test)
                 if status == PASSED:
                     if not self.prepare_test_environment(
-                            [graph_path], graphs_list_of_tests[graph]):
+                            [graph_path], graphs_list_of_tests[graph_path]):
                         break
                     status, error_type, extracted_expected_responses, extracted_sent_requests, got_responses = run_protocol_test(
                         test, comment, self.config.server_address, self.config.port)
@@ -479,7 +477,7 @@ class TestSuite:
                         server_log = util.read_file(
                             "./TestSuite.server-log.txt")
                         self.log_for_all_tests(
-                            graphs_list_of_tests[graph],
+                            graphs_list_of_tests[graph_path],
                             "serverLog",
                             util.remove_date_time_parts(server_log))
 
