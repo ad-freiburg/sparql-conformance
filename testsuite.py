@@ -397,9 +397,13 @@ class TestSuite:
                 continue
 
             for test in graphs_list_of_tests[graph_path]:
+                content_type = "rq"
+                if "Update" in test.typeName:
+                    content_type = "ru"
+
                 query_result = qlever.query(
                     test.queryFile,
-                    "rq",
+                    content_type,
                     "srx",
                     self.config.server_address,
                     self.config.port)
