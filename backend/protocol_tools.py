@@ -48,8 +48,11 @@ def prepare_response(request_with_reponse: str) -> str:
             line = line.replace("Content-Type:", "")
             content_types = line.strip().split("or")
             for content_type in content_types:
-                response["content_types"].append(
-                    content_type.strip().split(";")[0])
+                # Split on ',' to handle multiple content types
+                cts = content_type.split(",")
+                for ct in cts:
+                    if ct != "":
+                        response["content_types"].append(ct.strip().split(";")[0])
         if line.startswith("true"):
             response["result"] = "true"
         if line.startswith("false"):
