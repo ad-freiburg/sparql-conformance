@@ -17,15 +17,9 @@ def index(command_index: str, graph_paths: list) -> tuple:
     """
     remove_paths = []
     graphs = ""
-    for graph_path in graph_paths:
-        if graphs == "":
-            graph_name = "-"
-        else:
-            if "%" in graph_path:
-                graph_path, graph_name = graph_path.split("%")
-            else:
-                graph_name = graph_path.split("/")[-1]
-
+    for graph in graph_paths:
+        graph_path = graph[0]
+        graph_name = graph[1]
         if graph_path.endswith(".rdf"):
             graph_path_new = graph_path.replace(".rdf", ".ttl")
             remove_paths.append(graph_path_new)
