@@ -1,10 +1,12 @@
 import telnetlib as telnet
 import re
+from typing import Tuple
+
 from backend.models import TestObject, FAILED, PASSED, RESULTS_NOT_THE_SAME
 from backend.rdf_tools import compare_ttl
 
 
-def prepare_request(request_with_reponse: str) -> str:
+def prepare_request(request_with_reponse: str) -> Tuple[str, str]:
     request = request_with_reponse.split("#### Response")[0]
     before_header = True
     request_lines = request.splitlines()
@@ -27,7 +29,7 @@ def prepare_request(request_with_reponse: str) -> str:
     request_header = "\r\n".join(request_header_lines)
     request_body = "\r\n".join(request_body_lines)
     request_header = request_header.replace("XXX", str(len(request_body)))
-    # request = request_header + "\r\n\r\n" + request_body + "\r\n"
+    request_header = request_header + "\r\n" + "Authorization: Bearer abc"
     return request_header + "\r\n\r\n", request_body + "\r\n"
 
 
