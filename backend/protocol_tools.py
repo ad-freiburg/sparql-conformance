@@ -8,6 +8,8 @@ from backend.rdf_tools import compare_ttl
 
 def prepare_request(request_with_reponse: str) -> Tuple[str, str]:
     request = request_with_reponse.split("#### Response")[0]
+    # Quick fix: change the x-www-url-form-urlencoded content type to x-www-form-urlencoded
+    request = request.replace("application/x-www-url-form-urlencoded", "application/x-www-form-urlencoded")
     before_header = True
     request_lines = request.splitlines()
     index_header = 0
