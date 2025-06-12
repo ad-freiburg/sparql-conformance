@@ -398,13 +398,15 @@ class TestSuite:
 
             for test in graphs_list_of_tests[graph_path]:
                 content_type = "rq"
+                result_format = "srx"
                 if "Update" in test.typeName:
                     content_type = "ru"
-
+                if "construct" in test.name:
+                    result_format = "ttl"
                 query_result = qlever.query(
                     test.queryFile,
                     content_type,
-                    "srx",
+                    result_format,
                     self.config.server_address,
                     self.config.port)
                 if query_result[0] != 200:
