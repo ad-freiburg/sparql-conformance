@@ -468,12 +468,16 @@ class TestSuite:
         """
         for graph_path in graphs_list_of_tests:
             print(f"Running protocol tests for graph: {graph_path}")
-
+            # Work around for issue #25, missing data for protocol tests
+            path_to_data = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+            graph_paths = [graph_path]
+            for i in range(3):
+                graph_paths.append(os.path.join(path_to_data, f"data{i}.rdf%http://kasei.us/2009/09/sparql/data/data{i}.rdf"))
             for test in graphs_list_of_tests[graph_path]:
                 status, error_type, comment = self.get_comment(test)
                 if status == PASSED:
                     if not self.prepare_test_environment(
-                            [graph_path], graphs_list_of_tests[graph_path]):
+                            graph_paths, graphs_list_of_tests[graph_path]):
                         break
                     status, error_type, extracted_expected_responses, extracted_sent_requests, got_responses = run_protocol_test(
                         test, comment, self.config.server_address, self.config.port)
