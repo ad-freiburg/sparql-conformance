@@ -23,7 +23,7 @@ class TestSuite:
     A class to represent a test suite for SPARQL using QLever.
     """
 
-    def __init__(self, name: str, tests, test_count, config: Config):
+    def __init__(self, name: str, tests: Dict[str, Dict[Tuple[Tuple[str, str], ...], List[TestObject]]], test_count, config: Config):
         """
         Constructs all the necessary attributes for the TestSuite object.
 
@@ -168,7 +168,7 @@ class TestSuite:
 
     def prepare_test_environment(
             self,
-            graph_paths: list,
+            graph_paths: Tuple[Tuple[str, str], ...],
             list_of_tests: list) -> bool:
         """
         Prepares the test environment for a given graph.
@@ -354,7 +354,7 @@ class TestSuite:
                     util.remove_date_time_parts(server_log))
             qlever.remove_index(self.config.command_remove_index)
 
-    def run_protocol_tests(self, graphs_list_of_tests):
+    def run_protocol_tests(self, graphs_list_of_tests: Dict[Tuple[Tuple[str, str], ...], List[TestObject]]):
         """
         Executes protocol tests for each graph in the test suite.
         """
@@ -363,12 +363,14 @@ class TestSuite:
             # Work around for issue #25, missing data for protocol tests
             path_to_data = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
             graph_paths = graph_path
-            #TODO FIX
             for i in range(3):
-                graph_paths.append(os.path.join(path_to_data, f"data{i}.rdf%http://kasei.us/2009/09/sparql/data/data{i}.rdf"))
+                path_to_graph = os.path.join(path_to_data, f"data{i}.rdf")
+                name_of_graph = f"http://kasei.us/2009/09/sparql/data/data{i}.rdf"
+                new_path: Tuple[str, str] = (path_to_graph, name_of_graph)
+                graph_paths = graph_paths + (new_path,)
             for test in graphs_list_of_tests[graph_path]:
                 if not self.prepare_test_environment(
-                        graph_path, graphs_list_of_tests[graph_path]):
+                        graph_paths, graphs_list_of_tests[graph_path]):
                     break
                 if test.comment:
                     status, error_type, extracted_expected_responses, extracted_sent_requests, got_responses = run_protocol_test(
