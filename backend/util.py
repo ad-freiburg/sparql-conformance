@@ -1,6 +1,19 @@
 import re
 import os
+from typing import Optional
+from urllib.parse import urlparse, unquote
 
+def local_name(uri: str) -> str:
+    """Extract the local name from a URI (after # or /)."""
+    if "#" in uri:
+        return uri.split("#")[-1]
+    return uri.split("/")[-1]
+
+def uri_to_path(uri):
+    parsed = urlparse(str(uri))
+    if parsed.scheme != 'file':
+        return uri
+    return unquote(parsed.path)
 
 def path_exists(path):
     if not os.path.exists(path):
@@ -17,17 +30,13 @@ def is_number(s):
         return False
 
 
-def escape(str: str) -> str:
+def escape(string: Optional[str]) -> str:
     """
     Takes any string and returns the escaped version to use in html.
-
-    Parameters:
-        str (str): The  string containing <, > etc.
-
-    Returns:
-        str: Escaped version of the input.
     """
-    return str.replace(
+    if string is None:
+        return ''
+    return string.replace(
         "&",
         "&amp;").replace(
         "<",

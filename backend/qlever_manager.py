@@ -1,31 +1,27 @@
 import os
 import time
+from typing import Tuple
+
 import requests
 import subprocess
 from backend.rdf_tools import write_ttl_file, delete_ttl_file, rdf_xml_to_turtle
 
-def index(command_index: str, graph_paths: list) -> tuple:
+def index(command_index: str, graph_paths: Tuple[Tuple[str, str], ...]) -> tuple:
     """
     Executes a command to index a graph file using the QLever IndexBuilderMain binary.
 
     Parameters:
-        command_index (str): Command to be executed
-        graph_path (str): The path to the graph file to be indexed.
+        command_index: Command to be executed
+        graph_paths: The path to the graph file to be indexed.
 
     Returns:
         tuple (bool, string): Returns the status as a bool and the error message or the index build log
     """
     remove_paths = []
     graphs = ""
-    for graph_path in graph_paths:
-        if graphs == "":
-            graph_name = "-"
-        else:
-            if "%" in graph_path:
-                graph_path, graph_name = graph_path.split("%")
-            else:
-                graph_name = graph_path.split("/")[-1]
-
+    for graph in graph_paths:
+        graph_path = graph[0]
+        graph_name = graph[1]
         if graph_path.endswith(".rdf"):
             graph_path_new = graph_path.replace(".rdf", ".ttl")
             remove_paths.append(graph_path_new)
