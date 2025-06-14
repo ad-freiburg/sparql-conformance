@@ -124,7 +124,7 @@ def run_protocol_test(
     got_responses = []
 
     for request_with_reponse in test_request_split:
-        if test.typeName == "GraphStoreProtocolTest":
+        if test.type_name == "GraphStoreProtocolTest":
             request_with_reponse = request_with_reponse.replace(
                 "$HOST$", test.config.HOST)
             request_with_reponse = request_with_reponse.replace(
