@@ -373,8 +373,8 @@ class TestSuite:
                         graph_paths, graphs_list_of_tests[graph_path]):
                     break
                 if test.comment:
-                    status, error_type, extracted_expected_responses, extracted_sent_requests, got_responses = run_protocol_test(
-                        test, test.comment, self.config.server_address, self.config.port)
+                    status, error_type, extracted_expected_responses, extracted_sent_requests, got_responses, newpath = run_protocol_test(
+                        test, test.comment, '')
                     qlever.stop_server(self.config.command_stop_server)
                     qlever.remove_index(self.config.command_remove_index)
                     if os.path.exists("./TestSuite.server-log.txt"):
@@ -398,6 +398,44 @@ class TestSuite:
                     extracted_expected_responses)
                 setattr(test, "response", got_responses)
 
+    def run_graphstore_protocol_tests(self, graphs_list_of_tests: Dict[Tuple[Tuple[str, str], ...], List[TestObject]]):
+        """
+        Executes graphstore protocol tests for each graph in the test suite.
+        """
+        for graph_path in graphs_list_of_tests:
+            print(f'Running graphstore protocol tests for graph: {graph_path}')
+            if not self.prepare_test_environment(
+                    graph_path, graphs_list_of_tests[graph_path]):
+                break
+            newpath = ''
+            for test in graphs_list_of_tests[graph_path]:
+                if test.comment:
+                    status, error_type, extracted_expected_responses, extracted_sent_requests, got_responses, new_newpath = run_protocol_test(
+                        test, test.comment, newpath)
+                    if new_newpath != '':
+                        newpath = new_newpath
+                    self.update_test_status(test, status, error_type)
+                else:
+                    extracted_sent_requests = ''
+                    extracted_expected_responses = ''
+                    got_responses = ''
+                setattr(test, 'protocol', test.comment)
+                setattr(test, 'protocol_sent', extracted_sent_requests)
+                setattr(
+                    test,
+                    'response_extracted',
+                    extracted_expected_responses)
+                setattr(test, 'response', got_responses)
+            qlever.stop_server(self.config.command_stop_server)
+            qlever.remove_index(self.config.command_remove_index)
+            if os.path.exists('./TestSuite.server-log.txt'):
+                server_log = util.read_file(
+                    './TestSuite.server-log.txt')
+                self.log_for_all_tests(
+                    graphs_list_of_tests[graph_path],
+                    'server_log',
+                    util.remove_date_time_parts(server_log))
+
     def run(self):
         """
         Main method to run all query tests.
@@ -407,7 +445,7 @@ class TestSuite:
         self.run_update_tests(self.tests["update"])
         self.run_syntax_tests(self.tests["syntax"])
         self.run_protocol_tests(self.tests["protocol"])
-        self.run_protocol_tests(self.tests["graphstoreprotocol"])
+        self.run_graphstore_protocol_tests(self.tests["graphstoreprotocol"])
 
     def compress_json_bz2(self, input_data, output_filename):
         with bz2.open(output_filename, "wt") as zipfile:
