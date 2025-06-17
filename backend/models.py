@@ -34,22 +34,19 @@ class Config:
         self.number_types = config.get('number_types')
         self.path_to_test_suite = os.path.abspath(config.get('path_to_testsuite'))
         self.path_to_binaries = os.path.abspath(config.get('path_to_binaries'))
-        self.queries = config.get('queries')
         self.command_index = config.get('command_index')
         self.command_start_server = config.get('command_start_server')
         self.command_stop_server = config.get('command_stop_server')
         self.command_remove_index = config.get('command_remove_index')
         self.server_address = config.get('server_address')
         self.port = config.get('port')
-        self.directories = config.get('directories')
+        self.exclude = config.get('exclude')
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert configuration to dictionary format."""
         return {
             'alias': self.alias,
             'number_types': self.number_types,
-            'queries': self.queries,
-            'directories': self.directories,
             'HOST': self.HOST,
             'GRAPHSTORE': self.GRAPHSTORE,
             'NEWPATH': self.NEWPATH
