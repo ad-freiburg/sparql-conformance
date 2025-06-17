@@ -20,15 +20,6 @@ def create_config(
     if not path_exists(path_to_testsuite) or not path_exists(path_to_binaries) or not path_exists(
             path_to_server_main) or not path_exists(path_to_index_builder):
         return False
-    directories = [
-        directory for directory in os.listdir(path_to_testsuite) if os.path.isdir(
-            os.path.join(
-                path_to_testsuite,
-                directory)) and os.path.isfile(
-            os.path.join(
-                path_to_testsuite,
-                directory,
-                "manifest.ttl"))]
     config = {
         "HOST": host,
         "GRAPHSTORE": graphstore,
@@ -41,15 +32,6 @@ def create_config(
         "port": port,
         "path_to_testsuite": path_to_testsuite,
         "path_to_binaries": path_to_binaries,
-        "queries": [
-            "Query.rq",
-            "Syntax.rq",
-            "Update.rq",
-            "Format.rq",
-            "Protocol.rq",
-            "Service.rq",
-            "GraphStoreProtocol.rq"],
-        "directories": directories,
         "alias": {
             "http://www.w3.org/2001/XMLSchema#integer": "http://www.w3.org/2001/XMLSchema#int",
             "http://www.w3.org/2001/XMLSchema#double": "http://www.w3.org/2001/XMLSchema#decimal",
@@ -64,7 +46,13 @@ def create_config(
             "http://www.w3.org/2001/XMLSchema#decimal",
             "http://www.w3.org/2001/XMLSchema#float",
             "http://www.w3.org/2001/XMLSchema#int",
-            "http://www.w3.org/2001/XMLSchema#decimal"]}
+            "http://www.w3.org/2001/XMLSchema#decimal"],
+        "exclude": [
+            "Service description contains a matching sd:endpoint triple",
+            "GET on endpoint returns RDF",
+            "Service description conforms to schema",
+            "POST - existing graph",
+        ]}
     write_json_file("config.json", config)
     return True
 
