@@ -169,7 +169,7 @@ class TestSuite:
     def prepare_test_environment(
             self,
             graph_paths: Tuple[Tuple[str, str], ...],
-            list_of_tests: list) -> bool:
+            list_of_tests: List[TestObject]) -> bool:
         """
         Prepares the test environment for a given graph.
 
@@ -196,6 +196,8 @@ class TestSuite:
                 status = True
             self.log_for_all_tests(list_of_tests, "server_log", server[1])
         self.log_for_all_tests(list_of_tests, "index_log", index[1])
+        if status and "Syntax" in list_of_tests[0].type_name:
+            qlever.activate_syntax_test_mode(self.config.server_address, self.config.port)
         return status
 
     def process_failed_response(self, test, query_response: tuple) -> tuple:

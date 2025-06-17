@@ -166,3 +166,11 @@ def query(query, type, result_format, server_address, port) -> tuple:
         return (response.status_code, response.content.decode("utf-8"))
     except requests.exceptions.RequestException as e:
         return (500, f"Query execution error: {str(e)}")
+
+def activate_syntax_test_mode(server_address, port):
+    url = f'{server_address}:{port}'
+    params = {
+        "access-token": "abc",
+        "syntax-test-mode": "true"
+    }
+    requests.get(url, params)
