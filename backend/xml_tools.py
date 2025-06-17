@@ -209,26 +209,28 @@ def xml_elements_equal(
                 element2.attrib,
                 dict):
             return False
-        if not isinstance(
-            element1.attrib, dict) and (
-            alias.get(
-                element1.attrib) != element2.attrib and alias.get(
-                element2.attrib) != element1.attrib) or not compare_with_intended_behaviour:
-            return False
-        if isinstance(element1.attrib, dict):
-            if element1.attrib.get("datatype") is None and element2.attrib.get(
-                    "datatype") is None:
-                # Check if language tags are equal, treat them as case-insensitive ex. en-US = en-us
-                xml_lang_key = '{http://www.w3.org/XML/1998/namespace}lang'
-                if xml_lang_key in element1.attrib and xml_lang_key in element2.attrib:
-                    if not element1.attrib[xml_lang_key].lower() == element2.attrib[xml_lang_key].lower():
+        if ((element1.attrib.get("datatype") is not None or element2.attrib.get("datatype") != "http://www.w3.org/2001/XMLSchema#string") and
+            (element2.attrib.get("datatype") is not None or element1.attrib.get("datatype") != "http://www.w3.org/2001/XMLSchema#string")):
+            if not isinstance(
+                element1.attrib, dict) and (
+                alias.get(
+                    element1.attrib) != element2.attrib and alias.get(
+                    element2.attrib) != element1.attrib) or not compare_with_intended_behaviour:
+                return False
+            if isinstance(element1.attrib, dict):
+                if element1.attrib.get("datatype") is None and element2.attrib.get(
+                        "datatype") is None:
+                    # Check if language tags are equal, treat them as case-insensitive ex. en-US = en-us
+                    xml_lang_key = '{http://www.w3.org/XML/1998/namespace}lang'
+                    if xml_lang_key in element1.attrib and xml_lang_key in element2.attrib:
+                        if not element1.attrib[xml_lang_key].lower() == element2.attrib[xml_lang_key].lower():
+                            return False
+                    else:
                         return False
                 else:
-                    return False
-            else:
-                if (alias.get(element1.attrib.get("datatype")) != element2.attrib.get("datatype") and alias.get(
-                        element2.attrib.get("datatype")) != element1.attrib.get("datatype")) or not compare_with_intended_behaviour:
-                    return False
+                    if (alias.get(element1.attrib.get("datatype")) != element2.attrib.get("datatype") and alias.get(
+                            element2.attrib.get("datatype")) != element1.attrib.get("datatype")) or not compare_with_intended_behaviour:
+                        return False
 
     if (element1.attrib.get("datatype") in number_types) != (
             element2.attrib.get("datatype") in number_types):
