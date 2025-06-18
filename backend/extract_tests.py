@@ -158,13 +158,14 @@ def load_tests_from_manifest(
             path = manifest_abs_path.split("manifest.ttl")[0]
             entailment_regime = g.value(test_uri, SD.entailmentRegime)
             entailment_profile = g.value(test_uri, SD.entailmentProfile)
-            if str(name) in config.exclude:
+            group = os.path.basename(os.path.normpath(path))
+            if str(name) in config.exclude or group in config.exclude:
                 continue
             tests.append(TestObject(
                 test=str(test_uri),
                 name=str(name),
                 type_name=test_type,
-                group=os.path.basename(os.path.normpath(path)),
+                group=group,
                 path=path,
                 action_node=action,
                 result_node=result,

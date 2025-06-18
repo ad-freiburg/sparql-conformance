@@ -48,9 +48,7 @@ def create_config(
             "http://www.w3.org/2001/XMLSchema#int",
             "http://www.w3.org/2001/XMLSchema#decimal"],
         "exclude": [
-            "Service description contains a matching sd:endpoint triple",
-            "GET on endpoint returns RDF",
-            "Service description conforms to schema",
+            "entailment",
             "POST - existing graph",
         ]}
     write_json_file("config.json", config)
