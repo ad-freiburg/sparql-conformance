@@ -1,5 +1,6 @@
 import telnetlib as telnet
 import re
+import json
 from typing import Tuple
 
 from backend.models import TestObject, FAILED, PASSED, RESULTS_NOT_THE_SAME
@@ -76,7 +77,34 @@ def prepare_response(request_with_reponse: str) -> dict[str, str | list[str]]:
     return response
 
 
-def compare_response(expected_response: dict[str, str | list[str]], got_response: str) -> Tuple[bool, str]:
+def parse_chunked_response(response: str) -> str:
+    """
+    Handle chunked server response ex:
+    4
+    ABCD
+    0
+    """
+    headers, body = response.split('\r\n\r\n', 1)
+    body_lines = body.splitlines()
+    full_body = ''
+    i = 0
+    while i < len(body_lines):
+        chunk_size_line = body_lines[i].strip()
+        if not chunk_size_line:
+            i += 1
+            continue
+
+        chunk_size = int(chunk_size_line, 16)
+        if chunk_size == 0:
+            break
+        i += 1
+
+        chunk_data = body_lines[i]
+        full_body += chunk_data
+        i += 1
+    return full_body
+
+def compare_response(expected_response: dict[str, str | list[str]], got_response: str, is_select: bool) -> Tuple[bool, str]:
     status_code_match = False
     content_type_match = False
     result_match = False
@@ -102,6 +130,11 @@ def compare_response(expected_response: dict[str, str | list[str]], got_response
     if expected_response.get('result') is None or got_response.find(
             expected_response['result']) != -1:
         result_match = True
+    # Handle SELECT queries with the expected result true
+    if expected_response.get('result', False) and is_select:
+        json_body = parse_chunked_response(got_response)
+        parsed = json.loads(json_body)
+        result_match = bool(parsed.get('results', {}).get('bindings'))
     if 'text/turtle' in expected_response.get(
             'content_types') and status_code_match and content_type_match:
         response_ttl = '\n\n'.join(got_response.split('\n\n')[1:])
@@ -149,7 +182,7 @@ def run_protocol_test(
         tn.write(request_head.encode('utf-8') + request_body.encode(encoding))
         tn_response = tn.read_all().decode('utf-8')
         got_responses.append(tn_response)
-        matching, newpath = compare_response(response, tn_response)
+        matching, newpath = compare_response(response, tn_response, 'SELECT' in request_with_reponse)
         status.append(matching)
         tn.close()
     if all(status):
