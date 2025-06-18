@@ -365,7 +365,7 @@ class TestSuite:
             # Work around for issue #25, missing data for protocol tests
             path_to_data = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
             graph_paths = graph_path
-            for i in range(3):
+            for i in range(4):
                 path_to_graph = os.path.join(path_to_data, f"data{i}.rdf")
                 name_of_graph = f"http://kasei.us/2009/09/sparql/data/data{i}.rdf"
                 new_path: Tuple[str, str] = (path_to_graph, name_of_graph)
