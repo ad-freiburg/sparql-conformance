@@ -74,6 +74,10 @@ def prepare_response(request_with_reponse: str) -> dict[str, str | list[str]]:
     if 'text/turtle' in response['content_types'] and response.get(
             'result') is None:
         response['result'] = '\n\n'.join(response_string.split('\n\n')[2:])
+        # Quickfix: `GET of PUT - Initial state` Protocol test is missing prefixes in the expected response
+        if not response['result'].startswith('@prefix'):
+            print("Adding prefixes")
+            response['result'] = '@prefix foaf: <http://xmlns.com/foaf/0.1/> .\n@prefix v: <http://www.w3.org/2006/vcard/ns#> .\n\n' + response['result']
     return response
 
 
