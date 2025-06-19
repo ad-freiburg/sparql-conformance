@@ -15,7 +15,7 @@ def prepare_request(test: TestObject, request_with_reponse: str, newpath: str) -
         request = request.replace(
             '$HOST$', test.config.HOST)
         request = request.replace(
-            '$GRAPHSTORE$', test.config.GRAPHSTORE)
+            '$GRAPHSTORE$', '/' + test.config.GRAPHSTORE)
         request = request.replace(
             '$NEWPATH$', newpath)
     before_header = True
