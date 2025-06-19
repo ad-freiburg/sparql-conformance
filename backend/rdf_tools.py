@@ -83,8 +83,18 @@ def compare_ttl(expected_ttl: str, query_ttl: str) -> tuple:
     error_type = RESULTS_NOT_THE_SAME
     expected_graph = rdflib.Graph()
     query_graph = rdflib.Graph()
+    try:
+        expected_graph.parse(data=expected_ttl, format="turtle")
+    except Exception as e:
+        expected_ttl = '@prefix foaf: <http://xmlns.com/foaf/0.1/> .\n@prefix v: <http://www.w3.org/2006/vcard/ns#> .\n\n' + expected_ttl
+        try:
+            expected_graph.parse(data=expected_ttl, format="turtle")
+        except Exception as e:
+            error_type = FORMAT_ERROR
+            escaped_expected = f'<label class="red">{escape(expected_ttl)}</label>'
+            return NOT_TESTED, error_type, escaped_expected, escape(query_ttl), f'<label class="red">{e}</label>', escape(
+                query_ttl)
 
-    expected_graph.parse(data=expected_ttl, format="turtle")
     try:
         query_graph.parse(data=query_ttl, format="turtle")
     except Exception as e:
