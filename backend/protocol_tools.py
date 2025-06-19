@@ -43,9 +43,16 @@ def prepare_request(test: TestObject, request_with_reponse: str, newpath: str) -
     return request_header + '\r\n\r\n', request_body + '\r\n'
 
 
-def prepare_response(request_with_reponse: str) -> dict[str, str | list[str]]:
+def prepare_response(test: TestObject, request_with_reponse: str, newpath: str) -> dict[str, str | list[str]]:
     response: dict[str, str | list[str]] = {'status_codes': [], 'content_types': []}
     response_string = request_with_reponse.split('#### Response')[1]
+    if test.type_name == 'GraphStoreProtocolTest':
+        response_string = response_string.replace(
+            '$HOST$', test.config.HOST)
+        response_string = response_string.replace(
+            '$GRAPHSTORE$', test.config.GRAPHSTORE)
+        response_string = response_string.replace(
+            '$NEWPATH$', newpath)
     response_lines = [x.strip() for x in response_string.splitlines() if x]
     for line in response_lines:
         if line.endswith('response') or re.search(r'\dxx', line) is not None:
@@ -172,7 +179,7 @@ def run_protocol_test(
     for request_with_reponse in test_request_split:
         request_head, request_body = prepare_request(test, request_with_reponse, newpath)
         requests.append(request_head + request_body)
-        response = prepare_response(request_with_reponse)
+        response = prepare_response(test, request_with_reponse, newpath)
         responses.append(response)
         tn = telnet.Telnet(server_address, int(port))
         if 'charset=UTF-16' in request_head:
