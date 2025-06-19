@@ -48,6 +48,7 @@ def create_config(
             "http://www.w3.org/2001/XMLSchema#int",
             "http://www.w3.org/2001/XMLSchema#decimal"],
         "exclude": [
+            "service-description",
             "entailment",
             "POST - existing graph",
         ]}
