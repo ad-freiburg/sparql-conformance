@@ -1,5 +1,5 @@
 import rdflib
-from backend.models import FAILED, PASSED, RESULTS_NOT_THE_SAME, FORMAT_ERROR
+from backend.models import FAILED, PASSED, RESULTS_NOT_THE_SAME, FORMAT_ERROR, NOT_TESTED
 import os
 import re
 from backend.util import escape
@@ -99,10 +99,10 @@ def compare_ttl(expected_ttl: str, query_ttl: str) -> tuple:
         query_graph.parse(data=query_ttl, format="turtle")
     except Exception as e:
         error_type = FORMAT_ERROR
-        escaped_querty = f'<label class="red">{escape(query_ttl)}</label>'
+        escaped_query = f'<label class="red">{escape(query_ttl)}</label>'
         escaped_expected = f'<label class="red">{escape(expected_ttl)}</label>'
         return status, error_type, escape(
-            expected_ttl), escaped_querty, escaped_expected, f'<label class="red">{e}</label>'
+            expected_ttl), escaped_query, escaped_expected, f'<label class="red">{e}</label>'
 
     is_isomorphic = expected_graph.isomorphic(query_graph)
 
