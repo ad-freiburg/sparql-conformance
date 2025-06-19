@@ -5,9 +5,9 @@ import re
 from backend.util import escape
 
 
-def rdf_xml_to_turtle(file_path) -> str:
+def rdf_xml_to_turtle(file_path, public_id) -> str:
     graph = rdflib.Graph()
-    graph.parse(file_path, format="xml")
+    graph.parse(file_path, format="xml", publicID=public_id)
     return graph.serialize(format="turtle")
 
 

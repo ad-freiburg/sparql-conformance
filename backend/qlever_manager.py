@@ -25,7 +25,7 @@ def index(command_index: str, graph_paths: Tuple[Tuple[str, str], ...]) -> tuple
         if graph_path.endswith(".rdf"):
             graph_path_new = graph_path.replace(".rdf", ".ttl")
             remove_paths.append(graph_path_new)
-            write_ttl_file(graph_path_new, rdf_xml_to_turtle(graph_path))
+            write_ttl_file(graph_path_new, rdf_xml_to_turtle(graph_path, graph_name))
             graph_path = graph_path_new
         graphs += f" -f {graph_path} -F ttl -g {graph_name}" 
 
