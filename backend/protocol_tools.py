@@ -32,17 +32,19 @@ def prepare_request(test: TestObject, request_with_reponse: str, newpath: str) -
         if line.startswith('GET') and not line.endswith('HTTP/1.1'):
             request_lines[index] = line + ' HTTP/1.1'
     request_header_lines = request_lines[index_header:index_line_between]
+    if (len([l for l in request_header_lines if "Content-Length" in l]) == 0):
+        request_header_lines.append("Content-Length: XXX")
     request_body_lines = [
         x for x in request_lines[index_line_between + 1:] if x]
     request_header = '\r\n'.join(request_header_lines)
     request_body = '\r\n'.join(request_body_lines)
-    request_header = request_header.replace('XXX', str(len(request_body)))
     request_header = request_header + '\r\n' + 'Authorization: Bearer abc'
     if test.type_name == 'GraphStoreProtocolTest':
         request_header = request_header.replace(
             '$GRAPHSTORE$', '/' + test.config.GRAPHSTORE)
         request_body = request_body.replace(
             '$GRAPHSTORE$', test.config.GRAPHSTORE)
+    request_header = request_header.replace('XXX', str(len(request_body)))
     return request_header + '\r\n\r\n', request_body + '\r\n'
 
 
@@ -89,30 +91,57 @@ def prepare_response(test: TestObject, request_with_reponse: str, newpath: str) 
 
 def parse_chunked_response(response: str) -> str:
     """
-    Handle chunked server response ex:
-    4
-    ABCD
-    0
+    Extract the body of a http response that uses chunked transfer encoding.
+    Important: This function assumes that the input still consists of the
+    headers + chunked body.
     """
+    # only extract the chunked body, and then parse it.
     headers, body = response.split('\r\n\r\n', 1)
-    body_lines = body.splitlines()
-    full_body = ''
-    i = 0
-    while i < len(body_lines):
-        chunk_size_line = body_lines[i].strip()
-        if not chunk_size_line:
-            i += 1
-            continue
+    return parse_chunked_body(body)
 
-        chunk_size = int(chunk_size_line, 16)
+def parse_chunked_body(response_body: str) -> str:
+    """
+    Parses a chunked transfer encoded HTTP response body and returns the complete decoded string.
+
+    Parameters:
+    - response_body: The raw body as a string (with chunk sizes and data).
+
+    Returns:
+    - A string with the fully concatenated body content.
+    """
+    result = []
+    i = 0
+    length = len(response_body)
+
+    while i < length:
+        # Find the next \r\n to extract the chunk size
+        rn_index = response_body.find("\r\n", i)
+        if rn_index == -1:
+            break  # Malformed chunk
+
+        # Parse chunk size (hexadecimal)
+        chunk_size_str = response_body[i:rn_index]
+        try:
+            chunk_size = int(chunk_size_str, 16)
+        except ValueError:
+            raise ValueError(f"Invalid chunk size: {chunk_size_str}")
+
+        # If chunk size is 0, this is the last chunk
         if chunk_size == 0:
             break
-        i += 1
 
-        chunk_data = body_lines[i]
-        full_body += chunk_data
-        i += 1
-    return full_body
+        # Move pointer past chunk size line
+        i = rn_index + 2
+
+        # Extract the chunk data
+        chunk_data = response_body[i:i + chunk_size]
+        result.append(chunk_data)
+
+        # Move pointer past chunk data and the following \r\n
+        i += chunk_size + 2
+
+    return ''.join(result)
+
 
 def compare_response(expected_response: dict[str, str | list[str]], got_response: str, is_select: bool) -> Tuple[bool, str]:
     status_code_match = False
@@ -147,7 +176,7 @@ def compare_response(expected_response: dict[str, str | list[str]], got_response
         result_match = bool(parsed.get('results', {}).get('bindings'))
     if 'text/turtle' in expected_response.get(
             'content_types') and status_code_match and content_type_match:
-        response_ttl = '\n\n'.join(got_response.split('\n\n')[1:])
+        response_ttl = parse_chunked_response(got_response)
         status, error_type, expected_string, query_string, expected_string_red, query_string_red = compare_ttl(
             expected_response['result'], response_ttl)
         if status == 'Passed':
