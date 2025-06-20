@@ -15,8 +15,6 @@ def prepare_request(test: TestObject, request_with_reponse: str, newpath: str) -
         request = request.replace(
             '$HOST$', test.config.HOST)
         request = request.replace(
-            '$GRAPHSTORE$', '/' + test.config.GRAPHSTORE)
-        request = request.replace(
             '$NEWPATH$', newpath)
     before_header = True
     request_lines = request.splitlines()
@@ -40,6 +38,11 @@ def prepare_request(test: TestObject, request_with_reponse: str, newpath: str) -
     request_body = '\r\n'.join(request_body_lines)
     request_header = request_header.replace('XXX', str(len(request_body)))
     request_header = request_header + '\r\n' + 'Authorization: Bearer abc'
+    if test.type_name == 'GraphStoreProtocolTest':
+        request_header = request_header.replace(
+            '$GRAPHSTORE$', '/' + test.config.GRAPHSTORE)
+        request_body = request_body.replace(
+            '$GRAPHSTORE$', test.config.GRAPHSTORE)
     return request_header + '\r\n\r\n', request_body + '\r\n'
 
 
