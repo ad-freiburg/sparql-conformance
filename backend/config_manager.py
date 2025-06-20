@@ -52,6 +52,8 @@ def create_config(
             "service",
             "entailment",
             "POST - existing graph",
+            "PUT - mismatched payload",
+            "query specifying dataset in both query string and protocol; test for use of protocol-specified dataset"
         ]}
     write_json_file("config.json", config)
     return True
