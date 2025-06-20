@@ -409,7 +409,7 @@ class TestSuite:
             if not self.prepare_test_environment(
                     graph_path, graphs_list_of_tests[graph_path]):
                 break
-            newpath = ''
+            newpath = '/newpath-not-set'
             for test in graphs_list_of_tests[graph_path]:
                 if test.comment:
                     status, error_type, extracted_expected_responses, extracted_sent_requests, got_responses, new_newpath = run_protocol_test(
