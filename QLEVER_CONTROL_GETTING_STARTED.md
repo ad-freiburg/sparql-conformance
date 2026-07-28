@@ -1,171 +1,68 @@
-# Getting started with sparql-conformance and qlever-control
+# Test the pending qlever-control integration
 
-This guide explains how to install `sparql-conformance` together with
-`qlever-control` and run the W3C SPARQL conformance test suites against
-QLever.
-
-> [!NOTE]
-> The integration is currently under review in upstream pull requests. Until
-> those pull requests are merged, clone both projects from the `SIRDNARch`
-> forks as shown below.
+Use this guide while the matching changes are still under review in the
+`SIRDNARch` forks. For the command reference, see
+[`src/sparql_conformance/README.md`](src/sparql_conformance/README.md).
 
 ## Prerequisites
 
-Install the following before you begin:
-
 - Git
 - Python 3.10 or newer
-- Docker or Podman
+- A running Docker or Podman service
 
-Make sure that your container runtime is running before starting the tests.
-The generated QLever configuration uses containers by default.
-
-## 1. Create a working directory and virtual environment
+## Install both branches
 
 ```bash
-mkdir sparql-conformance-qlever
-cd sparql-conformance-qlever
+mkdir sparql-conformance-work
+cd sparql-conformance-work
 
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-```
 
-## 2. Clone sparql-conformance from the development fork
-
-The pending integration changes are on the `main` branch of the `SIRDNARch`
-fork. No additional branch switch is required after cloning, but the explicit
-`git switch main` below makes the expected branch clear.
-
-```bash
-git clone https://github.com/SIRDNARch/sparql-conformance.git
-cd sparql-conformance
-git switch main
-cd ..
-```
-
-The older `unify-package` development branch is no longer needed because its
-changes have been merged into `main`.
-
-## 3. Clone qlever-control from the development fork
-
-The corresponding pending changes live on the
-`sparql-conformance-command-all-engines` branch of the `SIRDNARch` fork.
-
-```bash
 git clone https://github.com/SIRDNARch/qlever-control.git
-cd qlever-control
-git switch sparql-conformance-command-all-engines
-cd ..
-```
+git -C qlever-control switch sparql-conformance-command-all-engines
 
-You can alternatively clone that branch directly:
+git clone https://github.com/SIRDNARch/sparql-conformance.git
 
-```bash
-git clone \
-  --branch sparql-conformance-command-all-engines \
-  https://github.com/SIRDNARch/qlever-control.git
-```
-
-## 4. Install both projects
-
-Install both projects into the same virtual environment. Install
-`sparql-conformance` first so that the qlever-control dependency is already
-available locally.
-
-```bash
-python -m pip install -e ./sparql-conformance
 python -m pip install -e ./qlever-control
+python -m pip install -e ./sparql-conformance
 ```
 
-Verify that the integrated commands are available:
+Install qlever-control first. `sparql-conformance` owns the
+`sparql_conformance` executable and must be installed last, particularly when
+upgrading from an older qlever-control revision that installed an executable
+with the same name.
+
+Verify both CLIs:
 
 ```bash
-sparql_conformance --help
 qlever --help
+sparql-conformance --help
+sparql_conformance --help
 ```
 
-The integrated qlever-control command is named `sparql_conformance`, with an
-underscore. The standalone command installed by `sparql-conformance` is named
-`sparql-conformance`, with a hyphen.
+The hyphenated command is the standalone runner. The underscored command is the
+Qleverfile-based integration.
 
-## 5. Create a directory for the QLever test run
+## Run QLever
 
-Use a separate working directory for every engine. The setup command creates
-an engine-specific `Qleverfile` in the current directory.
+Use a separate working directory for each engine:
 
 ```bash
-mkdir qlever-conformance
-cd qlever-conformance
-```
-
-## 6. Set up the test suite
-
-```bash
-sparql_conformance setup qlever
-```
-
-This command:
-
-- creates `./Qleverfile`;
-- downloads the W3C SPARQL 1.0 and 1.1 test suites into
-  `./testsuite-files`.
-
-You do not need to clone `w3c/rdf-tests` separately.
-
-## 7. Run the tests
-
-Run the complete test suite and print a summary:
-
-```bash
-sparql_conformance test --report summary
-```
-
-To print one live result line per test, use:
-
-```bash
-sparql_conformance test --report line
-```
-
-The result is written to:
-
-```text
-./results/qlever.json.bz2
-```
-
-## Complete command sequence
-
-```bash
-mkdir sparql-conformance-qlever
-cd sparql-conformance-qlever
-
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-
-git clone https://github.com/SIRDNARch/sparql-conformance.git
-cd sparql-conformance
-git switch main
-cd ..
-
-git clone https://github.com/SIRDNARch/qlever-control.git
-cd qlever-control
-git switch sparql-conformance-command-all-engines
-cd ..
-
-python -m pip install -e ./sparql-conformance
-python -m pip install -e ./qlever-control
-
-mkdir qlever-conformance
-cd qlever-conformance
+mkdir qlever-run
+cd qlever-run
 
 sparql_conformance setup qlever
 sparql_conformance test --report summary
 ```
 
-When opening a new terminal later, return to the top-level working directory
-and reactivate the virtual environment before using the commands:
+`setup` writes `./Qleverfile` and downloads the W3C SPARQL 1.0 and 1.1 suites
+below `./testsuite-files`. The test result is written below `./results`.
+
+For a live result line per test, use `--report line`. To inspect a failure with
+the engine left available for manual queries, run:
 
 ```bash
-source .venv/bin/activate
+sparql_conformance analyze "TEST NAME"
 ```
