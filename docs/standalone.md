@@ -86,7 +86,7 @@ Each run writes `<results-dir>/<name>.json.bz2`, a bzip2-compressed JSON file
 with one entry per test suite and an overall summary. Each test records its
 status and, where applicable, HTML-formatted expected/actual differences for a
 viewer such as
-[`sparql-conformance-ui`](https://github.com/SIRDNARch/sparql-conformance-ui).
+[`sparql-conformance-ui`](https://github.com/ad-freiburg/sparql-conformance-ui).
 
 Console reporting is optional:
 

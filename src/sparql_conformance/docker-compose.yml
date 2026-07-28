@@ -4,7 +4,7 @@ services:
   web:
     image: sparql-conformance-web:${SPARQL_CONFORMANCE_UI_BRANCH:-main}
     build:
-      context: https://github.com/SIRDNARch/sparql-conformance-ui.git#${SPARQL_CONFORMANCE_UI_BRANCH:-main}
+      context: https://github.com/ad-freiburg/sparql-conformance-ui.git#${SPARQL_CONFORMANCE_UI_BRANCH:-main}
       dockerfile: Dockerfile.web
     ports:
       - "${PRIVATE_WEB_PORT:-3000}:80"
@@ -14,7 +14,7 @@ services:
   api:
     image: sparql-conformance-api:${SPARQL_CONFORMANCE_UI_BRANCH:-main}
     build:
-      context: https://github.com/SIRDNARch/sparql-conformance-ui.git#${SPARQL_CONFORMANCE_UI_BRANCH:-main}
+      context: https://github.com/ad-freiburg/sparql-conformance-ui.git#${SPARQL_CONFORMANCE_UI_BRANCH:-main}
       dockerfile: Dockerfile.api
     environment:
       APP_MODE: private

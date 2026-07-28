@@ -131,7 +131,7 @@ TEST_SUITES = {"sparql11": "./testsuite-files/sparql/sparql11/", "sparql10": "./
 
 ### `visualize`
 
-Starts the [sparql-conformance-ui](https://github.com/SIRDNARch/sparql-conformance-ui) web viewer via docker/podman compose, serving the result files in the current directory.
+Starts the [sparql-conformance-ui](https://github.com/ad-freiburg/sparql-conformance-ui) web viewer via docker/podman compose, serving the result files in the current directory.
 
 ```bash
 sparql_conformance visualize

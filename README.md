@@ -42,7 +42,7 @@ separate working directory for each engine.
 - [Built-in engines and integrated commands](src/sparql_conformance/README.md)
 - [Writing an engine adapter](src/sparql_conformance/engines/README.md)
 - [Working with the pending qlever-control branches](QLEVER_CONTROL_GETTING_STARTED.md)
-- [Result viewer](https://github.com/SIRDNARch/sparql-conformance-ui)
+- [Result viewer](https://github.com/ad-freiburg/sparql-conformance-ui)
 
 ## Development
 
