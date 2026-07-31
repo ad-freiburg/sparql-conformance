@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sparql-conformance"
+description = "Engine-agnostic test harness for the W3C SPARQL conformance test suites"
+version = "0.1.0"
+authors = [
+    { name = "University of Freiburg, Chair of Algorithms and Data Structures" },
+]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "rdflib>=6.0.0",
+    "requests>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff"]
+
+[project.scripts]
+sparql-conformance = "sparql_conformance.main:main"
+sparql_conformance = "sparql_conformance.integrated_main:main"
+
+[project.urls]
+Repository = "https://github.com/ad-freiburg/sparql-conformance"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+sparql_conformance = [
+    "data/*",
+    "Qleverfiles/*",
+    "docker-compose.yml",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["test"]
+# Function-style tests only; keeps pytest from trying to collect the
+# production TestSuite class.
+python_classes = []

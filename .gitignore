@@ -1,5 +1,5 @@
 # Custom
-TestSuite.*
+TestSuite.settings.json
 .stxxl
 tests/
 results/

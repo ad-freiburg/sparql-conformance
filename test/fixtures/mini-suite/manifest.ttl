@@ -1,0 +1,54 @@
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix mf:     <http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#> .
+@prefix qt:     <http://www.w3.org/2001/sw/DataAccess/tests/test-query#> .
+@prefix ut:     <http://www.w3.org/2009/sparql/tests/test-update#> .
+@prefix dawgt:  <http://www.w3.org/2001/sw/DataAccess/tests/test-dawg#> .
+@prefix :       <manifest#> .
+
+<>  rdf:type mf:Manifest ;
+    rdfs:label "Mini suite exercising one test of each category; used by the framework's own tests" ;
+    mf:entries
+    ( :select-basic :select-int :ask-true :construct-basic
+      :syntax-good :syntax-bad :update-insert :service-description ) .
+
+:select-basic rdf:type mf:QueryEvaluationTest ;
+    mf:name "select-basic" ;
+    rdfs:comment "Simple SELECT with a SPARQL 1.0 Turtle result set" ;
+    dawgt:approval dawgt:Approved ;
+    mf:action [ qt:query <select-basic.rq> ; qt:data <data.ttl> ] ;
+    mf:result <select-basic.ttl> .
+
+:select-int rdf:type mf:QueryEvaluationTest ;
+    mf:name "select-int" ;
+    rdfs:comment "SELECT of a typed literal with an srj result" ;
+    mf:action [ qt:query <select-int.rq> ; qt:data <data.ttl> ] ;
+    mf:result <select-int.srj> .
+
+:ask-true rdf:type mf:QueryEvaluationTest ;
+    mf:name "ask-true" ;
+    mf:action [ qt:query <ask-true.rq> ; qt:data <data.ttl> ] ;
+    mf:result <ask-true.ttl> .
+
+:construct-basic rdf:type mf:QueryEvaluationTest ;
+    mf:name "construct-basic" ;
+    mf:action [ qt:query <construct-basic.rq> ; qt:data <data.ttl> ] ;
+    mf:result <construct-basic.ttl> .
+
+:syntax-good rdf:type mf:PositiveSyntaxTest11 ;
+    mf:name "syntax-good" ;
+    mf:action <syntax-good.rq> .
+
+:syntax-bad rdf:type mf:NegativeSyntaxTest11 ;
+    mf:name "syntax-bad" ;
+    mf:action <syntax-bad.rq> .
+
+:update-insert rdf:type mf:UpdateEvaluationTest ;
+    mf:name "update-insert" ;
+    mf:action [ ut:request <update-insert.ru> ; ut:data <data.ttl> ] ;
+    mf:result [ ut:data <update-insert-result.ttl> ] .
+
+:service-description rdf:type mf:ServiceDescriptionTest ;
+    mf:name "service-description" ;
+    rdfs:comment "Collected but not executable by the framework" ;
+    mf:action [] .

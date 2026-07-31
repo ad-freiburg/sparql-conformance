@@ -1,49 +1,59 @@
-# qlever-test-suite
+# sparql-conformance
 
-Running the [SPARQL test suite](https://www.w3.org/2009/sparql/docs/tests/) for [QLEVER](https://github.com/ad-freiburg/qlever).
+Run W3C SPARQL conformance suites against a SPARQL engine and write a
+machine-readable result file. The harness covers queries, updates, syntax,
+SPARQL Protocol, and Graph Store Protocol tests.
 
-## Prerequisites
+You can use it in two ways:
 
-You need too compile the [QLever code](https://github.com/ad-freiburg/qlever) and get the [SPARQL test suite files](https://github.com/w3c/rdf-tests/tree/main/sparql/).
+- Run the standalone CLI with your own small engine adapter.
+- Install qlever-control for ready-made support for QLever, Blazegraph,
+  GraphDB, Jena, MillenniumDB, Oxigraph, and Virtuoso.
 
-## Running the test suite
+## How do I start?
 
-### Create the config
+The quickest useful run uses qlever-control, so you do not need to
+install or start a SPARQL server:
 
-Before you can run the test suite you have to setup the config. To do this run the following command.
+Until the changes are merged upstream, use the
+`SIRDNARch/sparql-conformance-command-all-engines` branch of qlever-control.
+The [pending-branch guide](QLEVER_CONTROL_GETTING_STARTED.md) contains the
+exact clone commands.
 
-```
-python3 testsuite.py config <server address> <port> <path to testsuite> <path to the qlever binaries>  <graph store implementation host> <path of the URL of the graph store> <URL returned in the Location HTTP header>
-```
-Example:
-```
-python3 testsuite.py config http://0.0.0.0 7000 ./testsuite/ ../qlever-code/build/ localhost sparql sparql
-```
+Install qlever-control and this package in the same environment, with
+qlever-control first:
 
-### Extract the tests
+```bash
+python -m pip install -e ../qlever-control
+python -m pip install -e .
 
-After setting up the config you can now extract all the tests from the SPARQL test suite.
-
-```
-python3 testsuite.py extract
-```
-
-This will generate the test list with the specified name.
-
-### Run
-
-Now you can execute the test suite.
-
-```
-python3 testsuite.py <name for the test suite run>
-```
-Example:
-```
-python3 testsuite.py firstRun
+mkdir qlever-conformance
+cd qlever-conformance
+sparql_conformance setup qlever
+sparql_conformance test --report summary
 ```
 
-If this is the first run it will generate a directory called results. All results will be saved in this directory. For example the firstRun.json.
+`setup` creates the engine's `Qleverfile` and downloads the W3C suites. Keep a
+separate working directory for each engine.
 
-### View and compare results
+## Documentation
 
-If you want to visualize the results you can use the TODO.
+- [Standalone CLI and result format](docs/standalone.md)
+- [Built-in engines and integrated commands](src/sparql_conformance/README.md)
+- [Writing an engine adapter](src/sparql_conformance/engines/README.md)
+- [Working with the pending qlever-control branches](QLEVER_CONTROL_GETTING_STARTED.md)
+- [Result viewer](https://github.com/ad-freiburg/sparql-conformance-ui)
+
+## Development
+
+Requires Python 3.9 or newer.
+
+```bash
+python -m pip install -e ".[dev]"
+pytest
+ruff format --check
+ruff check
+```
+
+The standalone runner does not require qlever-control. Tests for the optional
+integration verify that this package boundary remains intact.
