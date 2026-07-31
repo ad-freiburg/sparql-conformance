@@ -23,7 +23,7 @@ python -m pip install --upgrade pip
 git clone https://github.com/SIRDNARch/qlever-control.git
 git -C qlever-control switch sparql-conformance-command-all-engines
 
-git clone https://github.com/SIRDNARch/sparql-conformance.git
+git clone https://github.com/ad-freiburg/sparql-conformance.git
 
 python -m pip install -e ./qlever-control
 python -m pip install -e ./sparql-conformance
