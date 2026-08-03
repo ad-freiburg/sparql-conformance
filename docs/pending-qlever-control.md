@@ -1,8 +1,12 @@
-# Test the pending qlever-control integration
+# Temporary qlever-control branch installation
 
-Use this guide while the matching changes are still under review in the
-`SIRDNARch` forks. For the command reference, see
-[`src/sparql_conformance/README.md`](src/sparql_conformance/README.md).
+Use this guide while the required qlever-control changes remain on the
+[`SIRDNARch/sparql-conformance-command-all-engines` branch](https://github.com/SIRDNARch/qlever-control/tree/sparql-conformance-command-all-engines).
+Delete this guide and update the main installation instructions when those
+changes are available from qlever-control's default branch or a release.
+
+For commands and supported engines, see the
+[integrated CLI reference](integrated.md).
 
 ## Prerequisites
 
@@ -10,7 +14,7 @@ Use this guide while the matching changes are still under review in the
 - Python 3.10 or newer
 - A running Docker or Podman service
 
-## Install both branches
+## Install both repositories
 
 ```bash
 mkdir sparql-conformance-work
@@ -43,26 +47,5 @@ sparql_conformance --help
 ```
 
 The hyphenated command is the standalone runner. The underscored command is the
-Qleverfile-based integration.
-
-## Run QLever
-
-Use a separate working directory for each engine:
-
-```bash
-mkdir qlever-run
-cd qlever-run
-
-sparql_conformance setup qlever
-sparql_conformance test --report summary
-```
-
-`setup` writes `./Qleverfile` and downloads the W3C SPARQL 1.0 and 1.1 suites
-below `./testsuite-files`. The test result is written below `./results`.
-
-For a live result line per test, use `--report line`. To inspect a failure with
-the engine left available for manual queries, run:
-
-```bash
-sparql_conformance analyze "TEST NAME"
-```
+Qleverfile-based integration. Continue with the
+[built-in engine quickstart](../README.md#quickstart-with-a-built-in-engine).

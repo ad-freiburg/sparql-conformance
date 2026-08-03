@@ -5,10 +5,22 @@ own engine adapter. It does not require qlever-control.
 
 ## Installation
 
+The standalone CLI requires Python 3.9 or newer and Git. The commands below
+create an isolated environment, install the package, and download the W3C test
+suites next to the checkout:
+
 ```bash
-python -m pip install -e .
+git clone https://github.com/ad-freiburg/sparql-conformance.git
+cd sparql-conformance
+
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install .
+
 git clone https://github.com/w3c/rdf-tests.git ../rdf-tests
 ```
+
+Use `python -m pip install -e .` instead when developing the harness itself.
 
 ## Basic usage
 
@@ -82,11 +94,13 @@ Treat two XSD types as an accepted equivalent:
 
 ## Results
 
-Each run writes `<results-dir>/<name>.json.bz2`, a bzip2-compressed JSON file
-with one entry per test suite and an overall summary. Each test records its
-status and, where applicable, HTML-formatted expected/actual differences for a
-viewer such as
+Each run writes `<results-dir>/<name>.json.bz2`, a bzip2-compressed v2 JSON
+document with one entry per test suite and an overall summary. Each test
+records its status and, where applicable, HTML-formatted expected/actual
+differences for a viewer such as
 [`sparql-conformance-ui`](https://github.com/ad-freiburg/sparql-conformance-ui).
+See [Result file format and status meanings](results.md) for the schema,
+compatibility contract, and current limitations.
 
 Console reporting is optional:
 
@@ -99,5 +113,5 @@ Colors are disabled when output is not a terminal or `NO_COLOR` is set.
 ## Add an engine
 
 An adapter is one Python file containing an `EngineManager` subclass. See
-[Writing a custom EngineManager](../src/sparql_conformance/engines/README.md)
+[Writing a custom EngineManager](engine-adapters.md)
 for the interface and the bundled rdflib example.

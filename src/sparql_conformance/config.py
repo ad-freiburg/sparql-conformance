@@ -29,7 +29,9 @@ class Config:
         self.GRAPHSTORE = graph_store
         self.alias = type_alias
         self.path_to_test_suite = os.path.abspath(testsuite_dir)
-        self.path_to_binaries = os.path.abspath(binaries_directory)
+        self.path_to_binaries = (
+            os.path.abspath(binaries_directory) if binaries_directory else ""
+        )
         self.server_binary = server_binary
         self.index_binary = index_binary
         self.exclude = exclude

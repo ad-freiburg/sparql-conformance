@@ -1,23 +1,34 @@
 # Writing a custom EngineManager
 
-An `EngineManager` is the adapter between this test harness and a SPARQL engine. It's a single Python file that you pass to `--engine`. The harness dynamically loads the first `EngineManager` subclass it finds in that file — no registration needed.
+An `EngineManager` is the adapter between this test harness and a SPARQL
+engine. It is a single Python file passed to `--engine`. The harness imports
+that file and loads the first `EngineManager` subclass it finds; no registration
+is needed.
+
+Only load adapters you trust. An adapter is ordinary Python code and runs with
+the same permissions as the `sparql-conformance` process.
 
 ## Quickstart
 
 1. Copy the skeleton below into a new file, e.g. `my-engine-manager.py`.
-2. Implement the five abstract methods (`setup`, `cleanup`, `query`, `update`, `protocol_endpoint`).
+2. Implement the five abstract methods (`setup`, `cleanup`, `query`, `update`,
+   `protocol_endpoint`).
 3. Run:
+
    ```bash
-   sparql-conformance --engine ./my-engine-manager.py --name myrun --test-suites '{"sparql11":"/path/to/rdf-tests/sparql/sparql11"}'
+   sparql-conformance \
+     --engine ./my-engine-manager.py \
+     --name myrun \
+     --test-suites '{"sparql11":"/path/to/rdf-tests/sparql/sparql11"}'
    ```
+
+See the [standalone installation guide](standalone.md#installation) if the
+command is not installed yet.
 
 ## Skeleton
 
 ```python
-import subprocess
-import requests
-import time
-from typing import Tuple, Optional
+from typing import Tuple
 
 from sparql_conformance.config import Config
 from sparql_conformance.engines.engine_manager import EngineManager
@@ -96,10 +107,14 @@ class MyEngineManager(EngineManager):
 | `config.alias` | `list` | Type alias pairs from `--type-alias` |
 | `config.exclude` | `list[str]` | Test/group names to skip |
 | `config.include` | `list[str] \| None` | Test/group names to run (or `None` for all) |
+| `config.server_binary` | `str` | Server binary name from `--server-binary` |
+| `config.index_binary` | `str` | Index binary name from `--index-binary` |
 
 ## How `setup` is called
 
-The harness groups tests by the set of RDF files they need. For each unique group, it calls `setup` once, runs all tests in that group, then calls `cleanup`. This cycle repeats for every group.
+The harness groups tests by the set of RDF files they need. For each unique
+group, it calls `setup` once, runs all tests in that group, then calls
+`cleanup`. This cycle repeats for every group.
 
 `graph_paths` always contains at least one entry. The graph name `"-"` means the default graph:
 
@@ -114,11 +129,28 @@ graph_paths = (
 )
 ```
 
-File formats you may receive: `.ttl`, `.nt`, `.nq`, `.trig`, `.rdf` (RDF/XML).
+File formats you may receive include `.ttl`, `.nt`, `.nq`, `.trig`, `.rdf`,
+and `.xml`. The last two are RDF/XML.
+
+## Error handling and cleanup
+
+- Return HTTP error status codes and response bodies from `query` and `update`;
+  expected protocol errors are test results, not Python exceptions.
+- Return false setup flags and useful logs when indexing or server startup
+  fails. Unexpected adapter exceptions can abort a run.
+- Make `cleanup` safe after partial setup and safe to call more than once.
+- Set finite timeouts on network and subprocess operations so a broken engine
+  cannot block an entire test run indefinitely.
+- Prefer argument lists over interpolated shell commands when invoking external
+  programs, particularly when paths or test data influence arguments.
 
 ## A working example
 
-[`rdflib_manager.py`](rdflib_manager.py) is a minimal, complete `EngineManager` that runs queries in-process via [rdflib](https://rdflib.readthedocs.io/) — no server, no docker. It only supports query/format/update/syntax tests (no protocol or graph-store-protocol, since those need a real HTTP server), but it is the smallest working reference for the five required methods. Try it out:
+[`rdflib_manager.py`](../src/sparql_conformance/engines/rdflib_manager.py) is a
+minimal, complete `EngineManager` that runs queries in-process via
+[rdflib](https://rdflib.readthedocs.io/)—no server or container runtime. It
+supports query, format, update, and syntax tests. Protocol and Graph Store
+Protocol tests require a real HTTP server. Try it out from the repository root:
 
 ```bash
 sparql-conformance --engine src/sparql_conformance/engines/rdflib_manager.py \
@@ -148,7 +180,8 @@ route. Users can still replace the manager's value with `--graph-store`.
 
 ### `default_graph_construct_query() -> str`
 
-Used by update tests to read back the default graph after a SPARQL UPDATE and compare it with the expected result. The default returns:
+Used by update tests to read back the default graph after a SPARQL UPDATE and
+compare it with the expected result. The default returns:
 
 ```sparql
 CONSTRUCT {?s ?p ?o} WHERE { ?s ?p ?o }
@@ -171,11 +204,20 @@ def default_graph_construct_query(self) -> str:
 
 ### `reset_graphs(config: Config, graph_paths: ...) -> bool`
 
-Called between consecutive tests in the same graph group for **update** and **protocol** test types. The purpose is to restore the engine to the original graph state so each test starts clean — without the side-effects left by the previous test's UPDATE query.
+Called between consecutive tests in the same graph group for **update** and
+**protocol** test types. It restores the original graph state so each test
+starts without side effects from the preceding UPDATE query.
 
-The default implementation does a full `cleanup()` + `setup()`, which is always correct but restarts the server for every test. Override this when your engine supports a cheaper in-place reset:
+The default implementation performs a full `cleanup()` plus `setup()`. This is
+correct but restarts the server for every test. Override it when the engine
+supports a cheaper in-place reset:
 
 ```python
+import requests
+
+from sparql_conformance.util import read_file
+
+
 def reset_graphs(
     self,
     config: Config,
@@ -198,6 +240,7 @@ def reset_graphs(
             params=params,
             data=ttl.encode("utf-8"),
             headers={"Content-Type": "text/turtle"},
+            timeout=30,
         )
         if not (200 <= r.status_code < 300):
             self.cleanup(config)
@@ -207,11 +250,16 @@ def reset_graphs(
     return True
 ```
 
-Returning `False` causes the harness to mark all remaining tests in the group as FAILED with a server error.
+Returning `False` causes the harness to mark all remaining tests in the group
+as failed with a server error.
 
 ### `supported_graphstore_features() -> Set[str]`
 
-Graph Store Protocol tests can declare requirements via `mf:requires` (e.g. needing the graph store to support direct or indirect graph identification, or graph creation via `POST`). Return the subset your engine supports; a test requiring an unsupported feature is skipped (reported as an intended deviation) instead of run and failed. Default assumes full support:
+Graph Store Protocol tests can declare requirements through `mf:requires`,
+such as direct or indirect graph identification or graph creation using
+`POST`. Return the subset the engine supports. A test requiring an unsupported
+feature is recorded as an intended deviation instead of being run and failed.
+The default assumes full support:
 
 ```python
 from sparql_conformance.engines.engine_manager import ALL_GRAPHSTORE_FEATURES
@@ -222,8 +270,13 @@ def supported_graphstore_features(self) -> set:
 
 ### `activate_syntax_test_mode(config: Config)`
 
-Called before syntax tests if your engine needs a special mode to return error responses for invalid queries rather than silently accepting them. Default implementation does nothing.
+Called before syntax tests if the engine needs a special mode to return error
+responses for invalid queries rather than silently accepting them. The default
+implementation does nothing.
 
 ### `get_server_log(config: Config) -> str`
 
-Called after each test group; the returned log is attached to the group's test results (empty string for "no log"). The default reads `./<config.run_id>.server-log.txt`, which is where the built-in managers write it. Override this if your engine logs somewhere else.
+Called after each test group; the returned log is attached to the group's test
+results. Return an empty string for no log. The default reads
+`./<config.run_id>.server-log.txt`, which is where the built-in managers write
+it. Override this if the engine logs somewhere else.
