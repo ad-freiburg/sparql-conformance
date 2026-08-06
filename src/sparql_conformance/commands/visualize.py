@@ -1,8 +1,22 @@
+import hashlib
+import re
+import shlex
 from pathlib import Path
 
 from qlever.command import QleverCommand
 from qlever.log import log
 from qlever.util import run_command
+
+
+def _image_tag(branch: str) -> str:
+    """Return a valid, collision-resistant Docker tag for a Git branch."""
+    sanitized = re.sub(r"[^A-Za-z0-9_.-]+", "-", branch).lstrip(".-")
+    if sanitized == branch and len(sanitized) <= 128:
+        return sanitized
+
+    sanitized = sanitized or "branch"
+    digest = hashlib.sha256(branch.encode()).hexdigest()[:12]
+    return f"{sanitized[:115]}-{digest}"
 
 
 class VisualizeCommand(QleverCommand):
@@ -32,36 +46,32 @@ class VisualizeCommand(QleverCommand):
         )
         port = args.port
         branch = args.ui_branch
+        image_tag = _image_tag(branch)
 
         compose_cmd = (
-            f'LOCAL_RESULTS_DIR="{result_dir}" '
-            f'PRIVATE_WEB_PORT="{port}" '
-            f'SPARQL_CONFORMANCE_UI_BRANCH="{branch}" '
-            f'{system} compose -f {compose_file}'
+            f"LOCAL_RESULTS_DIR={shlex.quote(str(result_dir))} "
+            f"PRIVATE_WEB_PORT={shlex.quote(str(port))} "
+            f"SPARQL_CONFORMANCE_UI_BRANCH={shlex.quote(branch)} "
+            f"SPARQL_CONFORMANCE_UI_IMAGE_TAG={shlex.quote(image_tag)} "
+            f"{system} compose -f {shlex.quote(str(compose_file))}"
         )
 
-        # Remove any previous run's DB volume for a clean start.
-        run_command(f"{compose_cmd} down -v", show_stderr=True)
+        # Private mode keeps its database in the API container, so recreating the
+        # Compose project guarantees a clean import of the selected result files.
+        run_command(f"{compose_cmd} down", show_stderr=True)
 
-        # Images are tagged by branch; build only when the tag is missing.
-        web_id = run_command(
-            f"{system} images -q sparql-conformance-web:{branch}",
-            return_output=True
+        # Resolve the branch on every invocation. Docker still reuses unchanged
+        # layers, but a moving branch such as `main` can no longer leave the user
+        # on an indefinitely stale UI image.
+        log.info(
+            f"Building sparql-conformance-ui images from branch '{branch}' "
+            "(unchanged layers will be cached)..."
         )
-        api_id = run_command(
-            f"{system} images -q sparql-conformance-api:{branch}",
-            return_output=True
-        )
-        if not web_id or not api_id:
-            log.info(
-                f"Building sparql-conformance-ui images from branch '{branch}' "
-                "(first run for this branch, may take a few minutes)..."
-            )
-            try:
-                run_command(f"{compose_cmd} build", show_output=True)
-            except Exception as e:
-                log.error(f"Building the images failed: {e}")
-                return False
+        try:
+            run_command(f"{compose_cmd} build --pull", show_output=True)
+        except Exception as e:
+            log.error(f"Building the images failed: {e}")
+            return False
 
         log.info(f"Starting visualization at http://localhost:{port}")
         try:
@@ -70,6 +80,6 @@ class VisualizeCommand(QleverCommand):
             log.error(f"Starting visualization failed: {e}")
             return False
         finally:
-            run_command(f"{compose_cmd} down -v", show_stderr=True)
+            run_command(f"{compose_cmd} down", show_stderr=True)
 
         return True

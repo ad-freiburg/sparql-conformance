@@ -153,6 +153,9 @@ explicit `--result-directory ./results` finds the generated results.
 
 Then open `http://localhost:3000`.
 
+The selected UI branch is resolved and built on every launch so moving branches
+such as `main` stay current. Docker reuses unchanged build layers.
+
 ## Console output
 
 By default a run only writes the result file; `--report` adds terminal feedback:

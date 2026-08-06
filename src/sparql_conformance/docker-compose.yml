@@ -1,37 +1,35 @@
-# Private, read-only deployment for `sparql_conformance visualize`.
-# Unlike the UI repository's local Compose file, this builds a selectable Git branch.
+# Private deployment for `sparql_conformance visualize`.
+# Keep this aligned with sparql-conformance-ui/docker-compose.private.yml. Unlike
+# that local Compose file, the build context is a selectable branch of the
+# canonical GitHub repository.
 services:
-  web:
-    image: sparql-conformance-web:${SPARQL_CONFORMANCE_UI_BRANCH:-main}
+  web-private:
+    image: sparql-conformance-web:${SPARQL_CONFORMANCE_UI_IMAGE_TAG:-main}
     build:
       context: https://github.com/ad-freiburg/sparql-conformance-ui.git#${SPARQL_CONFORMANCE_UI_BRANCH:-main}
       dockerfile: Dockerfile.web
     ports:
       - "${PRIVATE_WEB_PORT:-3000}:80"
     depends_on:
-      - api
+      - api-private
 
-  api:
-    image: sparql-conformance-api:${SPARQL_CONFORMANCE_UI_BRANCH:-main}
+  api-private:
+    image: sparql-conformance-api:${SPARQL_CONFORMANCE_UI_IMAGE_TAG:-main}
     build:
       context: https://github.com/ad-freiburg/sparql-conformance-ui.git#${SPARQL_CONFORMANCE_UI_BRANCH:-main}
       dockerfile: Dockerfile.api
     environment:
       APP_MODE: private
-      API_SURFACE: read
+      API_SURFACE: all
       PORT: 3000
       HOST: 0.0.0.0
       LOG_LEVEL: "${LOG_LEVEL:-info}"
-      DB_PATH: /data/conformance.db
+      DB_PATH: /tmp/conformance.db
       LOCAL_RESULTS_DIR: /results
       PRIVATE_AUTO_IMPORT: "true"
     volumes:
-      - db_data:/data
       - "${LOCAL_RESULTS_DIR}:/results:ro"
     networks:
       default:
         aliases:
           - api
-
-volumes:
-  db_data:
