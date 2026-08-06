@@ -23,7 +23,8 @@ fields. Actual test entries contain additional diagnostics and source data.
           "status": "Passed",
           "errorType": "",
           "executionQuery": "SELECT * WHERE { ?s ?p ?o }",
-          "datasetSources": []
+          "datasetSources": [],
+          "serviceData": []
         }
       },
       "info": {
@@ -55,6 +56,32 @@ Test entries include manifest metadata, the query and graph inputs, execution
 diagnostics, engine logs, and expected/actual output. Fields such as
 `expectedHtml`, `gotHtml`, `expectedHtmlRed`, and `gotHtmlRed` are
 display-oriented HTML used by the result viewer.
+
+SERVICE/federation query tests also include their endpoint fixtures in
+`serviceData`, in manifest order:
+
+```json
+{
+  "serviceData": [
+    {
+      "endpoint": "http://example1.org/sparql",
+      "fileName": "data02endpoint1.ttl",
+      "content": "@prefix : <http://example.org/> .\n..."
+    }
+  ]
+}
+```
+
+`endpoint` is the canonical URL from the manifest, `fileName` is only the
+fixture basename, and `content` is the exact UTF-8 source text loaded into the
+mock endpoint. Tests without SERVICE fixtures use an empty array. This field is
+independent of `datasetSources`, which describes local datasets referenced by
+query dataset clauses such as `FROM` and `FROM NAMED`.
+
+For federation tests, `queryFile` retains the original query while
+`executionQuery` records the endpoint-rewritten query sent to the engine. The
+mock URL in that diagnostic field can be ephemeral; the stable endpoint
+identity is always the canonical `serviceData[].endpoint` value.
 
 Consumers should check `version`, ignore unknown test fields, and treat a
 missing `version` as the legacy single-suite format. The `--compare-to` command

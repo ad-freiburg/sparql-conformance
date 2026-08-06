@@ -133,6 +133,7 @@ def test_result_file_is_valid_v2_json(run_results, tmp_path):
             "errorType",
             "executionQuery",
             "datasetSources",
+            "serviceData",
         ):
             assert field in entry
 

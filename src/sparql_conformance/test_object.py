@@ -1,8 +1,9 @@
-from enum import Enum
 import json
 import os
+from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
-from typing import Optional, List, Union, Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from sparql_conformance.config import Config
 from sparql_conformance.dataset_tools import prepare_query_dataset
@@ -10,10 +11,66 @@ from sparql_conformance.result_set_tools import (
     expected_is_result_set,
     is_select_or_ask,
 )
-from sparql_conformance.util import local_name, read_file, escape
+from sparql_conformance.util import escape, local_name, read_file, uri_to_path
 
 if TYPE_CHECKING:
     from sparql_conformance.protocol_request import ProtocolRequest
+
+
+@dataclass(frozen=True)
+class ServiceDataFixture:
+    """A validated SERVICE endpoint fixture loaded from the manifest."""
+
+    endpoint: str
+    source_path: str
+    file_name: str
+    content: str
+
+
+def normalize_service_data(
+        service_data: Any,
+        test_path: str,
+) -> tuple[list[ServiceDataFixture], str]:
+    """Load SERVICE fixtures once and return them with any setup error."""
+    if service_data is None:
+        return [], ""
+
+    entries = service_data if isinstance(service_data, list) else [service_data]
+    fixtures: list[ServiceDataFixture] = []
+
+    for index, entry in enumerate(entries, start=1):
+        prefix = f"SERVICE fixture {index}"
+        if not isinstance(entry, dict):
+            return fixtures, f"{prefix} must be an object."
+
+        endpoint = entry.get("endpoint")
+        if not isinstance(endpoint, str) or not endpoint.strip():
+            return fixtures, f"{prefix} is missing a non-empty endpoint."
+
+        data_path = entry.get("data")
+        if not isinstance(data_path, str) or not data_path.strip():
+            return fixtures, f"{prefix} is missing a non-empty data path."
+        data_path = data_path.strip()
+
+        source_path = Path(uri_to_path(data_path))
+        if not source_path.is_absolute():
+            source_path = Path(test_path) / source_path
+
+        try:
+            source_path = source_path.resolve(strict=True)
+            content = source_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            return fixtures, f"{prefix} data file is unreadable: {data_path}"
+
+        fixtures.append(ServiceDataFixture(
+            endpoint=endpoint.strip(),
+            source_path=str(source_path),
+            file_name=source_path.name,
+            content=content,
+        ))
+
+    return fixtures, ""
+
 
 class Status(str, Enum):
     PASSED = "Passed"
@@ -147,6 +204,17 @@ class TestObject:
         self.status = Status.NOT_TESTED
         self.index_files: Dict[str, str] = {}
         self.result_files: Dict[str, str] = {}
+        self.setup_error = ""
+        service_data = (
+            action_node.get("serviceData")
+            if isinstance(action_node, dict)
+            else None
+        )
+        self.service_data_fixtures, service_setup_error = (
+            normalize_service_data(service_data, self.path)
+        )
+        if service_setup_error:
+            self.setup_error = service_setup_error
 
         # Process action node
         if isinstance(action_node, dict):
@@ -174,7 +242,6 @@ class TestObject:
 
         self.execution_query = self.query_file
         self.dataset_sources = []
-        self.setup_error = ""
         if self.type_name in ("QueryEvaluationTest", "CSVResultFormatTest"):
             prepared_query = prepare_query_dataset(
                 self.query_file,
@@ -182,7 +249,11 @@ class TestObject:
             )
             self.execution_query = prepared_query.query
             self.dataset_sources = list(prepared_query.sources)
-            self.setup_error = prepared_query.setup_error
+            if prepared_query.setup_error:
+                self.setup_error = "\n".join(filter(None, (
+                    self.setup_error,
+                    prepared_query.setup_error,
+                )))
 
         self.expected_result_set = False
         if self.result_format in ("rdf", "ttl"):
@@ -245,6 +316,14 @@ class TestObject:
                     "graphIri": source.graph_iri,
                 }
                 for source in self.dataset_sources
+            ],
+            'serviceData': [
+                {
+                    "endpoint": fixture.endpoint,
+                    "fileName": fixture.file_name,
+                    "content": fixture.content,
+                }
+                for fixture in self.service_data_fixtures
             ],
             'graphFile': graph_html,
             'resultFile': escape(self.result_file),

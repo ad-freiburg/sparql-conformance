@@ -653,18 +653,11 @@ class TestSuite:
                     self._report_test(test)
                     continue
 
-                service_data = test.action_node.get('serviceData', []) if isinstance(test.action_node, dict) else []
-                if isinstance(service_data, dict):
-                    service_data = [service_data]
-
                 mock = MockSPARQLServer()
                 url_map: dict = {}
-                for sd in service_data:
-                    endpoint_url = sd.get('endpoint') if isinstance(sd, dict) else None
-                    data_path = sd.get('data') if isinstance(sd, dict) else None
-                    if endpoint_url and data_path:
-                        mock.add_endpoint(endpoint_url, util.read_file(data_path))
-                        url_map[endpoint_url] = None
+                for fixture in test.service_data_fixtures:
+                    mock.add_endpoint(fixture.endpoint, fixture.content)
+                    url_map[fixture.endpoint] = None
                 mock.start()
                 mock_host = _get_mock_host(self.config)
                 for orig in url_map:
@@ -673,6 +666,7 @@ class TestSuite:
                 query_text = test.execution_query
                 for orig, local in url_map.items():
                     query_text = query_text.replace(orig, local)
+                test.execution_query = query_text
 
                 if not self.prepare_test_environment(graph_key, [test]):
                     mock.stop()
